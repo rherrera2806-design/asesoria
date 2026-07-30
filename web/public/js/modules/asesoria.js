@@ -1,6 +1,7 @@
 App.registerModule('asesoria', {
     datos: [],
     stats: null,
+    estados: [],
     filtros: { busqueda: '', estado: '', plazo: 'todos' },
 
     async render() {
@@ -21,6 +22,10 @@ App.registerModule('asesoria', {
                 .progress-bar.amarillo{background:linear-gradient(90deg,#f59e0b,#d97706)}
                 .progress-bar.rojo{background:linear-gradient(90deg,#ef4444,#dc2626)}
                 .progress-text{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:#475569}
+                .estado-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;background:white}
+                .estado-item:hover{background:#f8fafc}
+                .estado-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:#dbeafe;color:#1e40af}
+                .estado-cierre{background:#d1fae5;color:#065f46}
             </style>
 
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1e40af 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,.3)">
@@ -30,7 +35,10 @@ App.registerModule('asesoria', {
                         <h2 style="margin:0;font-size:24px;font-weight:800;color:white;letter-spacing:-.5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Asesoria</h2>
                         <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,.7)">Seguimiento de solicitudes - Plazo 8 dias habiles</p>
                     </div>
-                    <button onclick="App.modules.asesoria.showCrearModal()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,.3)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nueva Solicitud</button>
+                    <div style="display:flex;gap:8px">
+                        <button onclick="App.modules.asesoria.showEstadosModal()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Estados</button>
+                        <button onclick="App.modules.asesoria.showCrearModal()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,.3)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nueva Solicitud</button>
+                    </div>
                 </div>
             </div>
 
@@ -46,9 +54,6 @@ App.registerModule('asesoria', {
                         <label class="form-label">Estado</label>
                         <select id="asEstado" onchange="App.modules.asesoria.aplicarFiltros()" class="form-control">
                             <option value="">Todos</option>
-                            <option value="en proceso">En Proceso</option>
-                            <option value="en preparacion">En Preparacion</option>
-                            <option value="enviado">Enviado</option>
                         </select>
                     </div>
                     <div style="flex:1;min-width:140px">
@@ -83,24 +88,32 @@ App.registerModule('asesoria', {
 
     async cargarDatos() {
         try {
-            let url = '/api/asesorias?';
-            const params = new URLSearchParams();
-            if (this.filtros.busqueda) params.set('filtro', this.filtros.busqueda);
-            if (this.filtros.estado) params.set('estado', this.filtros.estado);
-            url += params.toString();
-
-            const [res, statsRes] = await Promise.all([
-                apiFetch(url),
-                apiFetch('/api/asesorias/stats')
+            const [res, statsRes, estRes] = await Promise.all([
+                apiFetch('/api/asesorias'),
+                apiFetch('/api/asesorias/stats'),
+                apiFetch('/api/estados')
             ]);
 
             this.datos = await res.json();
             this.stats = await statsRes.json();
+            this.estados = await estRes.json();
 
+            if (this.filtros.busqueda) {
+                const f = this.filtros.busqueda.toLowerCase();
+                this.datos = this.datos.filter(d =>
+                    d.codigo_identificacion.toLowerCase().includes(f) ||
+                    d.remitente.toLowerCase().includes(f) ||
+                    d.detalle_solicitud.toLowerCase().includes(f)
+                );
+            }
+            if (this.filtros.estado) {
+                this.datos = this.datos.filter(d => d.estado_actual === this.filtros.estado);
+            }
             if (this.filtros.plazo !== 'todos') {
                 this.datos = this.datos.filter(d => d.progreso_estado === this.filtros.plazo);
             }
 
+            this.poblarFiltros();
             this.renderResumen();
             this.renderTabla();
         } catch (e) {
@@ -109,16 +122,24 @@ App.registerModule('asesoria', {
         }
     },
 
+    poblarFiltros() {
+        const sel = document.getElementById('asEstado');
+        if (!sel) return;
+        const val = sel.value;
+        sel.innerHTML = '<option value="">Todos</option>' +
+            this.estados.map(e => `<option value="${e.nombre}" ${e.nombre === val ? 'selected' : ''}>${e.nombre}</option>`).join('');
+    },
+
     renderResumen() {
         const el = document.getElementById('asResumen');
         if (!el || !this.stats) return;
         const s = this.stats;
         el.innerHTML = `
             <div class="as-card stat-card"><div class="stat-value" style="color:#0f172a">${s.total || 0}</div><div class="stat-label">Total</div></div>
-            <div class="as-card stat-card"><div class="stat-value" style="color:#3b82f6">${s.en_proceso || 0}</div><div class="stat-label">En Proceso</div></div>
-            <div class="as-card stat-card"><div class="stat-value" style="color:#8b5cf6">${s.en_preparacion || 0}</div><div class="stat-label">En Preparacion</div></div>
-            <div class="as-card stat-card"><div class="stat-value" style="color:#22c55e">${s.enviado || 0}</div><div class="stat-label">Enviadas</div></div>
-            <div class="as-card stat-card"><div class="stat-value" style="color:#dc2626">${s.vencidos || 0}</div><div class="stat-label">Vencidas</div></div>
+            <div class="as-card stat-card"><div class="stat-value" style="color:#3b82f6">${s.abiertas || 0}</div><div class="stat-label">Abiertas</div></div>
+            <div class="as-card stat-card"><div class="stat-value" style="color:#22c55e">${s.respondido_cerrado || 0}</div><div class="stat-label">Respondido y Cerrado</div></div>
+            <div class="as-card stat-card"><div class="stat-value" style="color:#8b5cf6">${s.enviado_cerrado || 0}</div><div class="stat-label">Enviado y Cerrado</div></div>
+            <div class="as-card stat-card"><div class="stat-value" style="color:#dc2626">${s.vencidas || 0}</div><div class="stat-label">Vencidas</div></div>
         `;
     },
 
@@ -132,14 +153,9 @@ App.registerModule('asesoria', {
             const total = d.dias_transcurridos + d.dias_restantes;
             const pct = total > 0 ? Math.min((d.dias_transcurridos / total) * 100, 100) : 0;
             const color = d.progreso_estado === 'verde' ? 'verde' : d.progreso_estado === 'amarillo' ? 'amarillo' : 'rojo';
+            const esCerrado = d.estado_actual === 'respondido y cerrado' || d.estado_actual === 'enviado y cerrado';
 
-            const estadoClass = {
-                'en proceso': 'badge-info',
-                'en preparacion': 'badge-warning',
-                'enviado': 'badge-success'
-            }[d.estado_actual] || 'badge-neutral';
-
-            return `<tr>
+            return `<tr style="${esCerrado ? 'opacity:.6' : ''}">
                 <td style="font-weight:600;color:#3b82f6">${escapeHtml(d.codigo_identificacion)}</td>
                 <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.remitente)}">${escapeHtml(d.remitente)}</td>
                 <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.detalle_solicitud)}">${escapeHtml(d.detalle_solicitud)}</td>
@@ -151,11 +167,11 @@ App.registerModule('asesoria', {
                         <div class="progress-text">${d.dias_transcurridos} / ${total} dias</div>
                     </div>
                 </td>
-                <td><span class="badge ${estadoClass}">${d.estado_actual}</span></td>
+                <td><span class="badge ${esCerrado ? 'badge-success' : 'badge-info'}">${d.estado_actual}</span></td>
                 <td>
                     <div style="display:flex;gap:4px">
                         <button onclick="App.modules.asesoria.verHistorial(${d.id})" class="btn btn-sm btn-outline" title="Ver historial">Ver</button>
-                        <button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id}, '${d.estado_actual}')" class="btn btn-sm btn-primary" title="Cambiar estado">Estado</button>
+                        ${!esCerrado ? `<button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id}, '${d.estado_actual}')" class="btn btn-sm btn-primary" title="Cambiar estado">Estado</button>` : ''}
                     </div>
                 </td>
             </tr>`;
@@ -164,8 +180,12 @@ App.registerModule('asesoria', {
 
     async verHistorial(id) {
         try {
-            const res = await apiFetch(`/api/asesorias/${id}/historial`);
-            const historial = await res.json();
+            const [histRes, estRes] = await Promise.all([
+                apiFetch(`/api/asesorias/${id}/historial`),
+                apiFetch('/api/estados')
+            ]);
+            const historial = await histRes.json();
+            const estados = await estRes.json();
             const asesoria = this.datos.find(d => d.id === id);
 
             let html = `
@@ -186,7 +206,8 @@ App.registerModule('asesoria', {
             } else {
                 html += '<div style="position:relative;padding-left:20px">';
                 historial.forEach((h, i) => {
-                    const color = h.estado === 'enviado' ? '#22c55e' : h.estado === 'en preparacion' ? '#f59e0b' : h.estado === 'en proceso' ? '#3b82f6' : '#94a3b8';
+                    const esCierre = estados.find(e => e.nombre === h.estado)?.cierra_proceso;
+                    const color = esCierre ? '#22c55e' : '#3b82f6';
                     html += `
                         <div style="position:relative;padding:12px 0 12px 20px;border-left:2px solid ${i === 0 ? color : '#e2e8f0'}">
                             <div style="position:absolute;left:-7px;top:16px;width:12px;height:12px;border-radius:50%;background:${color};border:2px solid white"></div>
@@ -266,12 +287,16 @@ App.registerModule('asesoria', {
     },
 
     showCambiarEstadoModal(id, estadoActual) {
-        const estados = ['en proceso', 'en preparacion', 'enviado'].filter(e => e !== estadoActual);
+        const disponibles = this.estados.filter(e => e.nombre !== estadoActual);
+        if (disponibles.length === 0) {
+            App.showAlert('No hay mas estados disponibles', 'warning');
+            return;
+        }
         const html = `
             <div class="form-group">
                 <label class="form-label">Nuevo Estado</label>
                 <select id="asNuevoEstado" class="form-control">
-                    ${estados.map(e => `<option value="${e}">${e.charAt(0).toUpperCase() + e.slice(1)}</option>`).join('')}
+                    ${disponibles.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join('')}
                 </select>
             </div>
             <div class="form-group">
@@ -301,6 +326,68 @@ App.registerModule('asesoria', {
             App.hideModal();
             App.showAlert('Estado actualizado');
             await this.cargarDatos();
+        } catch (e) {
+            App.showAlert('Error: ' + e.message, 'danger');
+        }
+    },
+
+    showEstadosModal() {
+        let html = `
+            <div style="margin-bottom:16px">
+                <div style="display:flex;gap:8px;margin-bottom:16px">
+                    <input type="text" id="nuevoEstadoNombre" class="form-control" placeholder="Nombre del nuevo estado" style="flex:1">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#64748b;white-space:nowrap">
+                        <input type="checkbox" id="nuevoEstadoCierra"> Cierra proceso
+                    </label>
+                    <button onclick="App.modules.asesoria.agregarEstado()" class="btn btn-primary btn-sm">Agregar</button>
+                </div>
+                <div id="estadosLista">
+                    ${this.estados.map((e, i) => `
+                        <div class="estado-item" draggable="true" data-id="${e.id}" data-orden="${e.orden}">
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <span style="color:#94a3b8;cursor:grab;font-size:16px" title="Arrastrar para reordenar">☰</span>
+                                <span style="font-weight:600;font-size:13px">${i + 1}.</span>
+                                <span class="estado-badge ${e.cierra_proceso ? 'estado-cierre' : ''}">${e.nombre}</span>
+                                ${e.cierra_proceso ? '<span style="font-size:10px;color:#065f46;background:#d1fae5;padding:2px 6px;border-radius:10px">CIERRA</span>' : ''}
+                            </div>
+                            <button onclick="App.modules.asesoria.eliminarEstado(${e.id}, '${escapeHtml(e.nombre)}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px" title="Eliminar">✕</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        App.showModal(html, { title: 'Gestionar Estados' });
+    },
+
+    async agregarEstado() {
+        const nombre = document.getElementById('nuevoEstadoNombre').value.trim();
+        const cierra = document.getElementById('nuevoEstadoCierra').checked;
+        if (!nombre) { App.showAlert('Ingresa un nombre', 'danger'); return; }
+
+        try {
+            const res = await apiFetch('/api/estados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, cierra_proceso: cierra })
+            });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+            App.showAlert('Estado agregado');
+            this.estados = await (await apiFetch('/api/estados')).json();
+            this.showEstadosModal();
+            this.poblarFiltros();
+        } catch (e) {
+            App.showAlert('Error: ' + e.message, 'danger');
+        }
+    },
+
+    async eliminarEstado(id, nombre) {
+        if (!await App.confirm(`Eliminar estado "${nombre}"?`)) return;
+        try {
+            await apiFetch(`/api/estados/${id}`, { method: 'DELETE' });
+            App.showAlert('Estado eliminado');
+            this.estados = await (await apiFetch('/api/estados')).json();
+            this.showEstadosModal();
+            this.poblarFiltros();
         } catch (e) {
             App.showAlert('Error: ' + e.message, 'danger');
         }

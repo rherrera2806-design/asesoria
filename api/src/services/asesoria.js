@@ -1,6 +1,34 @@
 const { query } = require('../config/database');
 const { calcularPlazoFinal, calcularDiasHabilesTranscurridos, calcularDiasHabilesRestantes, getProgresoEstado } = require('../config/dbSchema');
 
+const getEstados = async () => {
+    const result = await query('SELECT * FROM estados_config WHERE activo = TRUE ORDER BY orden ASC');
+    return result.rows;
+};
+
+const crearEstado = async (nombre, cierraProceso = false) => {
+    const maxOrden = await query('SELECT COALESCE(MAX(orden), 0) + 1 as next FROM estados_config');
+    const orden = maxOrden.rows[0].next;
+    const result = await query(
+        'INSERT INTO estados_config (nombre, orden, cierra_proceso) VALUES ($1, $2, $3) RETURNING *',
+        [nombre.trim().toLowerCase(), orden, cierraProceso]
+    );
+    return result.rows[0];
+};
+
+const eliminarEstado = async (id) => {
+    await query('UPDATE estados_config SET activo = FALSE WHERE id = $1', [id]);
+};
+
+const reordenarEstado = async (id, nuevaPosicion) => {
+    await query('UPDATE estados_config SET orden = $1 WHERE id = $2', [nuevaPosicion, id]);
+};
+
+const esEstadoCierre = async (nombreEstado) => {
+    const result = await query('SELECT cierra_proceso FROM estados_config WHERE nombre = $1', [nombreEstado]);
+    return result.rows.length > 0 ? result.rows[0].cierra_proceso : false;
+};
+
 const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde = '', fechaHasta = '' }) => {
     let sqlSimple = `SELECT a.* FROM asesorias a WHERE 1=1`;
     const params = [];
@@ -73,7 +101,7 @@ const crearAsesoria = async (body, usuarioEmail) => {
     await query(`
         INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
         VALUES ($1, $2, $3, $4)
-    `, [result.rows[0].id, 'en proceso', usuarioEmail, 'Asesoria creada']);
+    `, [result.rows[0].id, 'en proceso', usuarioEmail, 'asesoria creada']);
 
     return result.rows[0];
 };
@@ -97,7 +125,7 @@ const actualizarAsesoria = async (id, body, usuarioEmail) => {
     await query(`
         INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
         VALUES ($1, $2, $3, $4)
-    `, [id, 'editado', usuarioEmail, body.observacion || 'Datos actualizados']);
+    `, [id, 'editado', usuarioEmail, body.observacion || 'datos actualizados']);
 
     return await getAsesoriaById(id);
 };
@@ -111,7 +139,7 @@ const cambiarEstado = async (id, nuevoEstado, usuarioEmail, observacion) => {
     await query(`
         INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
         VALUES ($1, $2, $3, $4)
-    `, [id, nuevoEstado, usuarioEmail, observacion || `Estado cambiado a ${nuevoEstado}`]);
+    `, [id, nuevoEstado, usuarioEmail, observacion || `estado cambiado a: ${nuevoEstado}`]);
 
     return await getAsesoriaById(id);
 };
@@ -124,10 +152,10 @@ const getStats = async () => {
     const result = await query(`
         SELECT
             COUNT(*) as total,
-            COUNT(*) FILTER (WHERE estado_actual = 'en proceso') as en_proceso,
-            COUNT(*) FILTER (WHERE estado_actual = 'en preparacion') as en_preparacion,
-            COUNT(*) FILTER (WHERE estado_actual = 'enviado') as enviado,
-            COUNT(*) FILTER (WHERE plazo_final < CURRENT_DATE AND estado_actual != 'enviado') as vencidos
+            COUNT(*) FILTER (WHERE estado_actual NOT IN ('respondido y cerrado', 'enviado y cerrado')) as abiertas,
+            COUNT(*) FILTER (WHERE estado_actual = 'respondido y cerrado') as respondido_cerrado,
+            COUNT(*) FILTER (WHERE estado_actual = 'enviado y cerrado') as enviado_cerrado,
+            COUNT(*) FILTER (WHERE plazo_final < CURRENT_DATE AND estado_actual NOT IN ('respondido y cerrado', 'enviado y cerrado')) as vencidas
         FROM asesorias
     `);
     return result.rows[0];
@@ -142,6 +170,11 @@ const getPorFecha = async (fecha) => {
 };
 
 module.exports = {
+    getEstados,
+    crearEstado,
+    eliminarEstado,
+    reordenarEstado,
+    esEstadoCierre,
     getAsesorias,
     getAsesoriaById,
     getHistorial,

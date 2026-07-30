@@ -11,6 +11,15 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    await query(`CREATE TABLE IF NOT EXISTS estados_config (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(100) UNIQUE NOT NULL,
+        orden INTEGER NOT NULL DEFAULT 0,
+        cierra_proceso BOOLEAN DEFAULT FALSE,
+        activo BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     await query(`CREATE TABLE IF NOT EXISTS asesorias (
         id SERIAL PRIMARY KEY,
         codigo_identificacion VARCHAR(50) UNIQUE NOT NULL,
@@ -19,7 +28,7 @@ async function initDB() {
         observacion TEXT DEFAULT '',
         fecha_llegada DATE NOT NULL DEFAULT CURRENT_DATE,
         plazo_final DATE NOT NULL,
-        estado_actual VARCHAR(50) DEFAULT 'en proceso',
+        estado_actual VARCHAR(100) DEFAULT 'en proceso',
         creado_por VARCHAR(255) DEFAULT 'sistema',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -28,7 +37,7 @@ async function initDB() {
     await query(`CREATE TABLE IF NOT EXISTS asesorias_estados (
         id SERIAL PRIMARY KEY,
         asesoria_id INTEGER NOT NULL REFERENCES asesorias(id) ON DELETE CASCADE,
-        estado VARCHAR(50) NOT NULL,
+        estado VARCHAR(100) NOT NULL,
         fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         usuario_email VARCHAR(255) NOT NULL,
         observacion TEXT DEFAULT '',
@@ -40,6 +49,25 @@ async function initDB() {
     await query(`CREATE INDEX IF NOT EXISTS idx_asesorias_fecha ON asesorias(fecha_llegada)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_asesorias_estados_id ON asesorias_estados(asesoria_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_asesorias_codigo ON asesorias(codigo_identificacion)`);
+
+    const estCount = await query('SELECT COUNT(*) as c FROM estados_config');
+    if (Number(estCount.rows[0].c) === 0) {
+        const defaults = [
+            { nombre: 'en proceso', orden: 1, cierra: false },
+            { nombre: 'enviar para respuesta tecnica', orden: 2, cierra: false },
+            { nombre: 'respuesta recibida', orden: 3, cierra: false },
+            { nombre: 'preparando ord respuesta', orden: 4, cierra: false },
+            { nombre: 'respondido y cerrado', orden: 5, cierra: true },
+            { nombre: 'enviado y cerrado', orden: 6, cierra: true }
+        ];
+        for (const e of defaults) {
+            await query(
+                'INSERT INTO estados_config (nombre, orden, cierra_proceso) VALUES ($1, $2, $3) ON CONFLICT (nombre) DO NOTHING',
+                [e.nombre, e.orden, e.cierra]
+            );
+        }
+        console.log('[ASESORIA] Estados por defecto creados');
+    }
 }
 
 function calcularPlazoFinal(fechaLlegada) {
@@ -53,15 +81,6 @@ function calcularPlazoFinal(fechaLlegada) {
         }
     }
     return fecha.toISOString().split('T')[0];
-}
-
-function calcularDiasTranscurridos(fechaLlegada) {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const inicio = new Date(fechaLlegada);
-    inicio.setHours(0, 0, 0, 0);
-    const diff = hoy - inicio;
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
 function calcularDiasHabilesTranscurridos(fechaLlegada) {
@@ -100,10 +119,10 @@ function calcularDiasHabilesRestantes(plazoFinal) {
 }
 
 function getProgresoEstado(fechaLlegada, plazoFinal) {
-    const total = calcularDiasHabilesTranscurridos(fechaLlegada);
-    const transcurridos = total;
-    const plazoTotal = calcularDiasHabilesTranscurridos(fechaLlegada) + calcularDiasHabilesRestantes(plazoFinal);
-    const pct = plazoTotal > 0 ? (transcurridos / plazoTotal) * 100 : 0;
+    const transcurridos = calcularDiasHabilesTranscurridos(fechaLlegada);
+    const restantes = calcularDiasHabilesRestantes(plazoFinal);
+    const total = transcurridos + restantes;
+    const pct = total > 0 ? (transcurridos / total) * 100 : 0;
     if (pct <= 50) return 'verde';
     if (pct <= 75) return 'amarillo';
     return 'rojo';
@@ -112,7 +131,6 @@ function getProgresoEstado(fechaLlegada, plazoFinal) {
 module.exports = {
     initDB,
     calcularPlazoFinal,
-    calcularDiasTranscurridos,
     calcularDiasHabilesTranscurridos,
     calcularDiasHabilesRestantes,
     getProgresoEstado

@@ -19,6 +19,40 @@ router.get('/api/asesorias/calendario/:fecha', async (req, res, next) => {
     catch (e) { next(e); }
 });
 
+router.get('/api/estados', async (req, res, next) => {
+    try { res.json(await asesoria.getEstados()); }
+    catch (e) { next(e); }
+});
+
+router.post('/api/estados', async (req, res, next) => {
+    const { nombre, cierra_proceso } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
+    try {
+        res.status(201).json(await asesoria.crearEstado(nombre, cierra_proceso || false));
+    } catch (e) {
+        if (e.message.includes('duplicate') || e.code === '23505') {
+            return res.status(400).json({ error: 'Ya existe un estado con ese nombre' });
+        }
+        next(e);
+    }
+});
+
+router.delete('/api/estados/:id', async (req, res, next) => {
+    try {
+        await asesoria.eliminarEstado(Number(req.params.id));
+        res.json({ ok: true });
+    } catch (e) { next(e); }
+});
+
+router.put('/api/estados/:id/orden', async (req, res, next) => {
+    const { orden } = req.body;
+    if (orden === undefined) return res.status(400).json({ error: 'Orden requerida' });
+    try {
+        await asesoria.reordenarEstado(Number(req.params.id), Number(orden));
+        res.json({ ok: true });
+    } catch (e) { next(e); }
+});
+
 router.get('/api/asesorias/:id', async (req, res, next) => {
     try {
         const a = await asesoria.getAsesoriaById(Number(req.params.id));
@@ -40,7 +74,12 @@ router.post('/api/asesorias', async (req, res, next) => {
     try {
         const email = req.headers['x-user-email'] || 'sistema';
         res.status(201).json(await asesoria.crearAsesoria(req.body, email));
-    } catch (e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+        if (e.message.includes('duplicate') || e.code === '23505') {
+            return res.status(400).json({ error: 'Ya existe una asesoria con ese codigo' });
+        }
+        res.status(500).json({ error: e.message });
+    }
 });
 
 router.put('/api/asesorias/:id', async (req, res, next) => {
