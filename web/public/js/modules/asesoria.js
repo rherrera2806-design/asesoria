@@ -514,7 +514,13 @@ App.registerModule('asesoria', {
 
     fmtDate(dateStr) {
         if (!dateStr) return '-';
-        const d = new Date(dateStr + 'T12:00:00');
+        let d;
+        if (dateStr.includes('T')) {
+            d = new Date(dateStr);
+        } else {
+            d = new Date(dateStr + 'T12:00:00');
+        }
+        if (isNaN(d.getTime())) return '-';
         return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 });
