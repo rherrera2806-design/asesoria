@@ -1,6 +1,12 @@
+const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://asesoria-api.onrender.com';
+
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function apiFetch(path, options = {}) {
+    return fetch(`${API_BASE}${path}`, options);
 }
 
 const App = {

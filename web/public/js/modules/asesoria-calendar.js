@@ -61,7 +61,7 @@ App.registerModule('asesoria-calendar', {
         try {
             const inicio = new Date(this.year, this.month, 1).toISOString().split('T')[0];
             const fin = new Date(this.year, this.month + 1, 0).toISOString().split('T')[0];
-            const res = await fetch(`/api/asesorias?fecha_desde=${inicio}&fecha_hasta=${fin}`);
+            const res = await apiFetch(`/api/asesorias?fecha_desde=${inicio}&fecha_hasta=${fin}`);
             this.datos = await res.json();
         } catch (e) {
             console.error('Error calendar:', e);

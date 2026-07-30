@@ -90,8 +90,8 @@ App.registerModule('asesoria', {
             url += params.toString();
 
             const [res, statsRes] = await Promise.all([
-                fetch(url),
-                fetch('/api/asesorias/stats')
+                apiFetch(url),
+                apiFetch('/api/asesorias/stats')
             ]);
 
             this.datos = await res.json();
@@ -164,7 +164,7 @@ App.registerModule('asesoria', {
 
     async verHistorial(id) {
         try {
-            const res = await fetch(`/api/asesorias/${id}/historial`);
+            const res = await apiFetch(`/api/asesorias/${id}/historial`);
             const historial = await res.json();
             const asesoria = this.datos.find(d => d.id === id);
 
@@ -251,7 +251,7 @@ App.registerModule('asesoria', {
         }
 
         try {
-            const res = await fetch('/api/asesorias', {
+            const res = await apiFetch('/api/asesorias', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-user-email': 'admin@asesoria.cl' },
                 body: JSON.stringify({ codigo_identificacion: codigo, remitente, detalle_solicitud: detalle, observacion, fecha_llegada: fecha })
@@ -292,7 +292,7 @@ App.registerModule('asesoria', {
         const observacion = document.getElementById('asEstadoObservacion').value.trim();
 
         try {
-            const res = await fetch(`/api/asesorias/${id}/estado`, {
+            const res = await apiFetch(`/api/asesorias/${id}/estado`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-user-email': 'admin@asesoria.cl' },
                 body: JSON.stringify({ estado, observacion })
