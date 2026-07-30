@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asesoria - Seguimiento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <div class="app-layout" id="launcherView">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">A</div>
+                <div class="sidebar-title">
+                    Asesoria
+                    <small>Seguimiento</small>
+                </div>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+        </aside>
+        <header class="header">
+            <button class="menu-toggle" onclick="App.toggleSidebar()">☰</button>
+            <div class="header-left">
+                <div class="header-title" id="headerTitle">Asesoria</div>
+            </div>
+            <div class="header-right">
+                <div class="header-date" id="currentDate"></div>
+                <div class="header-user">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <span id="userName">Usuario</span>
+                </div>
+            </div>
+        </header>
+        <main class="main-content" id="mainContent">
+            <div class="page active" id="page-dashboard"></div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalHeaderTitle">Titulo</h3>
+                <button class="modal-close" onclick="App.hideModal()">&times;</button>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.hideModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="alertContainer" style="position:fixed;top:20px;right:20px;z-index:2000;max-width:400px"></div>
+
+    <script src="/js/app-main.js"></script>
+    <script src="/js/modules/asesoria.js"></script>
+    <script src="/js/modules/asesoria-calendar.js"></script>
+</body>
+</html>
