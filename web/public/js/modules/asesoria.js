@@ -412,20 +412,63 @@ App.registerModule('asesoria', {
                 </div>
                 <div id="estadosLista">
                     ${this.estados.map((e, i) => `
-                        <div class="estado-item" draggable="true" data-id="${e.id}" data-orden="${e.orden}">
+                        <div class="estado-item" id="estado-item-${e.id}" data-id="${e.id}" data-orden="${e.orden}">
                             <div style="display:flex;align-items:center;gap:10px">
                                 <span style="color:#94a3b8;cursor:grab;font-size:16px" title="Arrastrar para reordenar">☰</span>
                                 <span style="font-weight:600;font-size:13px">${i + 1}.</span>
-                                <span class="estado-badge ${e.cierra_proceso ? 'estado-cierre' : ''}">${e.nombre}</span>
+                                <span class="estado-badge ${e.cierra_proceso ? 'estado-cierre' : ''}" id="estado-nombre-${e.id}">${e.nombre}</span>
                                 ${e.cierra_proceso ? '<span style="font-size:10px;color:#065f46;background:#d1fae5;padding:2px 6px;border-radius:10px">CIERRA</span>' : ''}
                             </div>
-                            <button onclick="App.modules.asesoria.eliminarEstado(${e.id}, '${escapeHtml(e.nombre)}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px" title="Eliminar">✕</button>
+                            <div style="display:flex;gap:4px">
+                                <button onclick="App.modules.asesoria.showEditarEstadoInline(${e.id}, '${escapeHtml(e.nombre)}', ${e.cierra_proceso})" style="background:none;border:none;color:#d97706;cursor:pointer;font-size:14px" title="Editar nombre">✏️</button>
+                                <button onclick="App.modules.asesoria.eliminarEstado(${e.id}, '${escapeHtml(e.nombre)}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px" title="Eliminar">✕</button>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
             </div>
         `;
         App.showModal(html, { title: 'Gestionar Estados' });
+    },
+
+    showEditarEstadoInline(id, nombreActual, cierraActual) {
+        const item = document.getElementById(`estado-item-${id}`);
+        if (!item) return;
+        item.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;flex:1">
+                <span style="color:#94a3b8;font-size:16px">☰</span>
+                <input type="text" id="editEstadoNombre-${id}" class="form-control" value="${escapeHtml(nombreActual)}" style="flex:1;font-size:13px;padding:6px 10px">
+                <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#64748b;white-space:nowrap">
+                    <input type="checkbox" id="editEstadoCierra-${id}" ${cierraActual ? 'checked' : ''}> Cierra
+                </label>
+            </div>
+            <div style="display:flex;gap:4px">
+                <button onclick="App.modules.asesoria.guardarEstadoEditado(${id})" style="background:#22c55e;color:white;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">Guardar</button>
+                <button onclick="App.modules.asesoria.showEstadosModal()" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">Cancelar</button>
+            </div>
+        `;
+        document.getElementById(`editEstadoNombre-${id}`).focus();
+    },
+
+    async guardarEstadoEditado(id) {
+        const nombre = document.getElementById(`editEstadoNombre-${id}`).value.trim();
+        const cierra = document.getElementById(`editEstadoCierra-${id}`).checked;
+        if (!nombre) { App.showAlert('Ingresa un nombre', 'danger'); return; }
+
+        try {
+            const res = await apiFetch(`/api/estados/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, cierra_proceso: cierra })
+            });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+            App.showAlert('Estado actualizado');
+            this.estados = await (await apiFetch('/api/estados')).json();
+            this.showEstadosModal();
+            this.poblarFiltros();
+        } catch (e) {
+            App.showAlert('Error: ' + e.message, 'danger');
+        }
     },
 
     async agregarEstado() {

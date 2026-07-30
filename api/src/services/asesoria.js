@@ -24,6 +24,15 @@ const reordenarEstado = async (id, nuevaPosicion) => {
     await query('UPDATE estados_config SET orden = $1 WHERE id = $2', [nuevaPosicion, id]);
 };
 
+const editarEstado = async (id, nombre, cierraProceso) => {
+    const result = await query(
+        'UPDATE estados_config SET nombre = $1, cierra_proceso = $2 WHERE id = $3 AND activo = TRUE RETURNING *',
+        [nombre.trim().toLowerCase(), cierraProceso, id]
+    );
+    if (result.rows.length === 0) throw new Error('Estado no encontrado');
+    return result.rows[0];
+};
+
 const esEstadoCierre = async (nombreEstado) => {
     const result = await query('SELECT cierra_proceso FROM estados_config WHERE nombre = $1', [nombreEstado]);
     return result.rows.length > 0 ? result.rows[0].cierra_proceso : false;
@@ -111,9 +120,15 @@ const actualizarAsesoria = async (id, body, usuarioEmail) => {
     const values = [];
     let idx = 1;
 
+    if (body.codigo_identificacion !== undefined) { fields.push(`codigo_identificacion = $${idx++}`); values.push(body.codigo_identificacion); }
     if (body.remitente !== undefined) { fields.push(`remitente = $${idx++}`); values.push(body.remitente); }
     if (body.detalle_solicitud !== undefined) { fields.push(`detalle_solicitud = $${idx++}`); values.push(body.detalle_solicitud); }
     if (body.observacion !== undefined) { fields.push(`observacion = $${idx++}`); values.push(body.observacion); }
+    if (body.fecha_llegada !== undefined) {
+        fields.push(`fecha_llegada = $${idx++}`); values.push(body.fecha_llegada);
+        const nuevoPlazo = calcularPlazoFinal(body.fecha_llegada);
+        fields.push(`plazo_final = $${idx++}`); values.push(nuevoPlazo);
+    }
 
     if (fields.length === 0) throw new Error('Sin campos para actualizar');
 
@@ -163,15 +178,21 @@ const getStats = async () => {
 
 const getPorFecha = async (fecha) => {
     const result = await query(
-        'SELECT * FROM asesorias WHERE fecha_llegada = $1 ORDER BY plazo_final ASC',
+        'SELECT * FROM asesorias WHERE plazo_final = $1 ORDER BY fecha_llegada ASC',
         [fecha]
     );
-    return result.rows;
+    return result.rows.map(r => {
+        const diasTranscurridos = calcularDiasHabilesTranscurridos(r.fecha_llegada);
+        const diasRestantes = calcularDiasHabilesRestantes(r.plazo_final);
+        const progresoEstado = getProgresoEstado(r.fecha_llegada, r.plazo_final);
+        return { ...r, dias_transcurridos: diasTranscurridos, dias_restantes: diasRestantes, progreso_estado: progresoEstado };
+    });
 };
 
 module.exports = {
     getEstados,
     crearEstado,
+    editarEstado,
     eliminarEstado,
     reordenarEstado,
     esEstadoCierre,

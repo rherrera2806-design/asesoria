@@ -44,6 +44,19 @@ router.delete('/api/estados/:id', async (req, res, next) => {
     } catch (e) { next(e); }
 });
 
+router.put('/api/estados/:id', async (req, res, next) => {
+    const { nombre, cierra_proceso } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
+    try {
+        res.json(await asesoria.editarEstado(Number(req.params.id), nombre, cierra_proceso || false));
+    } catch (e) {
+        if (e.message.includes('duplicate') || e.code === '23505') {
+            return res.status(400).json({ error: 'Ya existe un estado con ese nombre' });
+        }
+        next(e);
+    }
+});
+
 router.put('/api/estados/:id/orden', async (req, res, next) => {
     const { orden } = req.body;
     if (orden === undefined) return res.status(400).json({ error: 'Orden requerida' });
