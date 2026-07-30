@@ -169,8 +169,10 @@ App.registerModule('asesoria', {
                 </td>
                 <td><span class="badge ${esCerrado ? 'badge-success' : 'badge-info'}">${d.estado_actual}</span></td>
                 <td>
-                    <div style="display:flex;gap:4px">
+                    <div style="display:flex;gap:4px;flex-wrap:wrap">
                         <button onclick="App.modules.asesoria.verHistorial(${d.id})" class="btn btn-sm btn-outline" title="Ver historial">Ver</button>
+                        <button onclick="App.modules.asesoria.showEditarModal(${d.id})" class="btn btn-sm btn-outline" title="Editar" style="color:#d97706;border-color:#f59e0b">Editar</button>
+                        <button onclick="App.modules.asesoria.eliminar(${d.id}, '${escapeHtml(d.codigo_identificacion)}')" class="btn btn-sm btn-outline" title="Eliminar" style="color:#dc2626;border-color:#fca5a5">Eliminar</button>
                         ${!esCerrado ? `<button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id}, '${d.estado_actual}')" class="btn btn-sm btn-primary" title="Cambiar estado">Estado</button>` : ''}
                     </div>
                 </td>
@@ -280,6 +282,73 @@ App.registerModule('asesoria', {
             if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
             App.hideModal();
             App.showAlert('Solicitud creada correctamente');
+            await this.cargarDatos();
+        } catch (e) {
+            App.showAlert('Error: ' + e.message, 'danger');
+        }
+    },
+
+    showEditarModal(id) {
+        const d = this.datos.find(x => x.id === id);
+        if (!d) return;
+        const html = `
+            <div class="form-group">
+                <label class="form-label">Codigo de Identificacion *</label>
+                <input type="text" id="asEditCodigo" class="form-control" value="${escapeHtml(d.codigo_identificacion)}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Remitente *</label>
+                <input type="text" id="asEditRemitente" class="form-control" value="${escapeHtml(d.remitente)}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Detalle de Solicitud *</label>
+                <textarea id="asEditDetalle" class="form-control">${escapeHtml(d.detalle_solicitud)}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha de Llegada</label>
+                <input type="date" id="asEditFecha" class="form-control" value="${d.fecha_llegada ? d.fecha_llegada.split('T')[0] : ''}">
+            </div>
+        `;
+        App.showModal(html, { title: 'Editar Solicitud' });
+        const footer = document.querySelector('#modalOverlay .modal-footer');
+        footer.innerHTML = `
+            <button class="btn btn-outline" onclick="App.hideModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="App.modules.asesoria.editar(${id})">Guardar Cambios</button>
+        `;
+    },
+
+    async editar(id) {
+        const codigo = document.getElementById('asEditCodigo').value.trim();
+        const remitente = document.getElementById('asEditRemitente').value.trim();
+        const detalle = document.getElementById('asEditDetalle').value.trim();
+        const fecha = document.getElementById('asEditFecha').value;
+
+        if (!codigo || !remitente || !detalle) {
+            App.showAlert('Codigo, remitente y detalle son requeridos', 'danger');
+            return;
+        }
+
+        try {
+            const res = await apiFetch(`/api/asesorias/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'x-user-email': 'admin@asesoria.cl' },
+                body: JSON.stringify({ codigo_identificacion: codigo, remitente, detalle_solicitud: detalle, fecha_llegada: fecha })
+            });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+            App.hideModal();
+            App.showAlert('Solicitud actualizada');
+            await this.cargarDatos();
+        } catch (e) {
+            App.showAlert('Error: ' + e.message, 'danger');
+        }
+    },
+
+    async eliminar(id, codigo) {
+        if (!await App.confirm(`Eliminar la asesoria "${codigo}"? Esta accion no se puede deshacer.`)) return;
+        try {
+            const res = await apiFetch(`/api/asesorias/${id}`, { method: 'DELETE' });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+            App.showAlert('Solicitud eliminada');
             await this.cargarDatos();
         } catch (e) {
             App.showAlert('Error: ' + e.message, 'danger');
