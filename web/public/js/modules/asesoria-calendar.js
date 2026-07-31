@@ -4,6 +4,11 @@ App.registerModule('asesoria-calendar', {
     month: new Date().getMonth(),
     fechaSeleccionada: null,
 
+    toDateStr(s) {
+        if (!s) return '';
+        return s.includes('T') ? s.split('T')[0] : s.split(' ')[0];
+    },
+
     async render() {
         const el = document.getElementById('page-asesoria-calendar');
         el.innerHTML = `
@@ -81,7 +86,8 @@ App.registerModule('asesoria-calendar', {
 
             this.datos = todas.filter(d => {
                 if (!d.plazo_final) return false;
-                return d.plazo_final >= inicioMes && d.plazo_final <= finMes;
+                const pf = this.toDateStr(d.plazo_final);
+                return pf >= inicioMes && pf <= finMes;
             });
         } catch (e) {
             console.error('Error calendar:', e);
@@ -108,7 +114,7 @@ App.registerModule('asesoria-calendar', {
             const fecha = `${this.year}-${String(this.month + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
             const esHoy = fecha === hoyStr;
             const esVencido = fecha < hoyStr;
-            const itemsDelDia = this.datos.filter(d => d.plazo_final === fecha);
+            const itemsDelDia = this.datos.filter(d => this.toDateStr(d.plazo_final) === fecha);
 
             const vencidos = itemsDelDia.filter(d => d.estado_actual !== 'enviado');
             const countClass = vencidos.length > 0 ? (esVencido ? '' : 'soon') : 'ok';
@@ -147,7 +153,7 @@ App.registerModule('asesoria-calendar', {
 
     async verDia(fecha) {
         this.fechaSeleccionada = fecha;
-        const itemsDelDia = this.datos.filter(d => d.plazo_final === fecha);
+        const itemsDelDia = this.datos.filter(d => this.toDateStr(d.plazo_final) === fecha);
         const detalle = document.getElementById('calDetalle');
         const title = document.getElementById('calDetalleTitle');
         const list = document.getElementById('calDetalleList');
