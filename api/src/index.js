@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { initDB } = require('./config/dbSchema');
+const { query } = require('./config/database');
 const { requestLogger } = require('./config/logger');
 
 const app = express();
@@ -17,8 +18,13 @@ app.use('/api/', limiter);
 
 app.use(require('./routes/asesoria'));
 
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+    try {
+        await query('SELECT 1');
+        res.json({ status: 'ok', db: 'connected', timestamp: new Date().toISOString() });
+    } catch (e) {
+        res.status(503).json({ status: 'error', db: 'disconnected', timestamp: new Date().toISOString() });
+    }
 });
 
 app.use((err, req, res, next) => {
