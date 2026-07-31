@@ -19,6 +19,7 @@ const App = {
         if (this.currentPage === name) return;
         document.querySelectorAll('#mainContent .page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        this.closeSidebar();
 
         let page = document.getElementById(`page-${name}`);
         if (!page) {
@@ -84,7 +85,17 @@ const App = {
     },
 
     toggleSidebar() {
-        document.querySelector('.sidebar').classList.toggle('open');
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        sidebar.classList.toggle('open');
+        if (backdrop) backdrop.classList.toggle('show', sidebar.classList.contains('open'));
+    },
+
+    closeSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (sidebar) sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('show');
     },
 
     setSidebarBadge(page, count) {
