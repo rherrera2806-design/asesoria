@@ -1,0 +1,63 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { JWT_SECRET, JWT_EXPIRES } = require('../config/auth');
+const { query } = require('../config/database');
+
+const router = express.Router();
+
+router.post('/api/auth/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email y password son requeridos' });
+    }
+
+    try {
+        const result = await query('SELECT * FROM usuarios WHERE email = $1 AND activo = TRUE', [email]);
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Credenciales incorrectas' });
+        }
+
+        const user = result.rows[0];
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Credenciales incorrectas' });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, email: user.email, nombre: user.nombre, rol: user.rol },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES }
+        );
+
+        res.json({
+            token,
+            user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }
+        });
+    } catch (e) {
+        console.error('[AUTH] Error login:', e.message);
+        res.status(500).json({ error: 'Error al autenticar' });
+    }
+});
+
+router.get('/api/auth/me', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'No autenticado' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const result = await query('SELECT id, nombre, email, rol FROM usuarios WHERE id = $1 AND activo = TRUE', [decoded.id]);
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Usuario no encontrado' });
+        }
+        res.json({ user: result.rows[0] });
+    } catch (e) {
+        return res.status(401).json({ error: 'Token invalido' });
+    }
+});
+
+module.exports = router;

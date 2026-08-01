@@ -9,8 +9,36 @@ function escapeAttr(str) {
     return escapeHtml(str).replace(/"/g, '&quot;');
 }
 
+const Auth = {
+    getToken() { return localStorage.getItem('auth_token'); },
+    getUser() { try { return JSON.parse(localStorage.getItem('auth_user')); } catch { return null; } },
+    isLoggedIn() { return !!this.getToken(); },
+    isAdmin() { const u = this.getUser(); return u && u.rol === 'admin'; },
+    isVisitor() { const u = this.getUser(); return u && u.rol === 'visita'; },
+
+    requireAuth() {
+        if (!this.isLoggedIn()) {
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
+    },
+
+    logout() {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        window.location.href = 'login.html';
+    }
+};
+
 function apiFetch(path, options = {}) {
-    return fetch(`${API_BASE}${path}`, options);
+    const token = Auth.getToken();
+    const headers = { ...options.headers };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (options.body && typeof options.body === 'string' && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return fetch(`${API_BASE}${path}`, { ...options, headers });
 }
 
 const App = {
@@ -117,9 +145,7 @@ const SIDEBAR_SECTIONS = {
     asesoria: ['asesoria', 'asesoria-calendar']
 };
 
-function getUser() {
-    try { return JSON.parse(localStorage.getItem('asesoria_user')); } catch { return null; }
-}
+function getUser() { return Auth.getUser(); }
 
 function hasSection(section) { return SIDEBAR_SECTIONS[section] !== undefined; }
 function canSeeItem(item, section) { return true; }
@@ -164,10 +190,17 @@ function renderSidebar() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const user = getUser();
+    if (!Auth.requireAuth()) return;
+
+    const user = Auth.getUser();
     if (user) {
         document.getElementById('userName').textContent = user.nombre || user.email || 'Usuario';
         document.getElementById('userAvatar').textContent = (user.nombre || 'U').charAt(0).toUpperCase();
+        const roleBadge = document.getElementById('userRole');
+        if (roleBadge) {
+            roleBadge.textContent = user.rol === 'admin' ? 'Admin' : 'Visita';
+            roleBadge.className = `role-badge role-${user.rol}`;
+        }
     }
 
     const now = new Date();

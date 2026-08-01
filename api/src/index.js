@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const { initDB } = require('./config/dbSchema');
 const { query } = require('./config/database');
 const { requestLogger } = require('./config/logger');
+const { seedUsers } = require('./config/auth');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(requestLogger());
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
 app.use('/api/', limiter);
 
+app.use(require('./routes/auth'));
 app.use(require('./routes/asesoria'));
 
 app.get('/api/health', async (req, res) => {
@@ -38,6 +40,7 @@ async function start() {
     try {
         await initDB();
         console.log('[ASESORIA] Base de datos inicializada');
+        await seedUsers();
         app.listen(PORT, () => {
             console.log(`[ASESORIA] Servidor corriendo en puerto ${PORT}`);
         });
