@@ -35,7 +35,7 @@ App.registerModule('asesoria', {
                 <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
                     <div>
                         <h2 style="margin:0;font-size:24px;font-weight:800;color:white;letter-spacing:-.5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Asesoria</h2>
-                        <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,.7)">Seguimiento de solicitudes - Plazo 8 dias habiles</p>
+                        <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,.7)">Seguimiento de solicitudes</p>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap">
                         <button onclick="App.modules.asesoria.exportarExcel()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Excel</button>
