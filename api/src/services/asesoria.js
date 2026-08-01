@@ -63,7 +63,7 @@ const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde =
 
     const result = await query(sqlSimple, params);
 
-    return result.rows.map(r => {
+    const asesorias = result.rows.map(r => {
         const diasTranscurridos = calcularDiasHabilesTranscurridos(r.fecha_llegada);
         const diasRestantes = calcularDiasHabilesRestantes(r.plazo_final);
         const progresoEstado = getProgresoEstado(r.fecha_llegada, r.plazo_final);
@@ -74,6 +74,50 @@ const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde =
             progreso_estado: progresoEstado
         };
     });
+
+    const cierreResult = await query(`SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE`);
+    const estadosCierre = cierreResult.rows.map(r => r.nombre);
+
+    for (const a of asesorias) {
+        if (estadosCierre.includes(a.estado_actual)) {
+            const histResult = await query(
+                `SELECT fecha_hora FROM asesorias_estados WHERE asesoria_id = $1 AND estado = $2 ORDER BY fecha_hora ASC LIMIT 1`,
+                [a.id, a.estado_actual]
+            );
+            if (histResult.rows.length > 0) {
+                const fechaCierre = histResult.rows[0].fecha_hora;
+                a.dias_habiles_total = calcularDiasHabilesTranscurridos(a.fecha_llegada);
+                const fechaCierreDate = new Date(fechaCierre);
+                const fechaLlegada = new Date(a.fecha_llegada);
+                fechaLlegada.setHours(0, 0, 0, 0);
+                fechaCierreDate.setHours(0, 0, 0, 0);
+                if (fechaCierreDate > fechaLlegada) {
+                    a.dias_habiles_total = calcularDiasHabilesTranscurridosConTope(a.fecha_llegada, fechaCierreDate);
+                }
+            } else {
+                a.dias_habiles_total = calcularDiasHabilesTranscurridos(a.fecha_llegada);
+            }
+        }
+    }
+
+    return asesorias;
+};
+
+const calcularDiasHabilesTranscurridosConTope = (fechaInicio, fechaFin) => {
+    const inicio = new Date(fechaInicio);
+    inicio.setHours(0, 0, 0, 0);
+    const fin = new Date(fechaFin);
+    fin.setHours(0, 0, 0, 0);
+    let dias = 0;
+    const current = new Date(inicio);
+    while (current <= fin) {
+        const dia = current.getDay();
+        if (dia !== 0 && dia !== 6) {
+            dias++;
+        }
+        current.setDate(current.getDate() + 1);
+    }
+    return dias;
 };
 
 const getAsesoriaById = async (id) => {

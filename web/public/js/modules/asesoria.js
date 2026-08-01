@@ -22,6 +22,8 @@ App.registerModule('asesoria', {
                 .progress-bar.amarillo{background:linear-gradient(90deg,#f59e0b,#d97706)}
                 .progress-bar.rojo{background:linear-gradient(90deg,#ef4444,#dc2626)}
                 .progress-text{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:#475569}
+                .dias-totales{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-radius:20px;font-size:12px;font-weight:700;color:#065f46;border:1px solid #6ee7b7}
+                .dias-totales svg{width:14px;height:14px;stroke:#065f46;fill:none;stroke-width:2}
                 .estado-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;background:white}
                 .estado-item:hover{background:#f8fafc}
                 .estado-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:#dbeafe;color:#1e40af}
@@ -150,10 +152,26 @@ App.registerModule('asesoria', {
             return;
         }
         tbody.innerHTML = this.datos.map(d => {
-            const total = d.dias_transcurridos + d.dias_restantes;
-            const pct = total > 0 ? Math.min((d.dias_transcurridos / total) * 100, 100) : 0;
-            const color = d.progreso_estado === 'verde' ? 'verde' : d.progreso_estado === 'amarillo' ? 'amarillo' : 'rojo';
             const esCerrado = d.estado_actual === 'respondido y cerrado' || d.estado_actual === 'enviado y cerrado';
+
+            let progresoHtml;
+            if (esCerrado) {
+                const dias = d.dias_habiles_total || d.dias_transcurridos || 0;
+                progresoHtml = `
+                    <div class="dias-totales">
+                        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        ${dias} dia${dias !== 1 ? 's' : ''} habile${dias !== 1 ? 's' : ''} (cerrado)
+                    </div>`;
+            } else {
+                const total = d.dias_transcurridos + d.dias_restantes;
+                const pct = total > 0 ? Math.min((d.dias_transcurridos / total) * 100, 100) : 0;
+                const color = d.progreso_estado === 'verde' ? 'verde' : d.progreso_estado === 'amarillo' ? 'amarillo' : 'rojo';
+                progresoHtml = `
+                    <div class="progress-container">
+                        <div class="progress-bar ${color}" style="width:${pct}%"></div>
+                        <div class="progress-text">${d.dias_transcurridos} / ${total} dias</div>
+                    </div>`;
+            }
 
             return `<tr style="${esCerrado ? 'opacity:.6' : ''}">
                 <td style="font-weight:600;color:#3b82f6">${escapeHtml(d.codigo_identificacion)}</td>
@@ -161,12 +179,7 @@ App.registerModule('asesoria', {
                 <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.detalle_solicitud)}">${escapeHtml(d.detalle_solicitud)}</td>
                 <td>${this.fmtDate(d.fecha_llegada)}</td>
                 <td>${this.fmtDate(d.plazo_final)}</td>
-                <td>
-                    <div class="progress-container">
-                        <div class="progress-bar ${color}" style="width:${pct}%"></div>
-                        <div class="progress-text">${d.dias_transcurridos} / ${total} dias</div>
-                    </div>
-                </td>
+                <td>${progresoHtml}</td>
                 <td><span class="badge ${esCerrado ? 'badge-success' : 'badge-info'}">${d.estado_actual}</span></td>
                 <td>
                     <div style="display:flex;gap:4px;flex-wrap:wrap">
