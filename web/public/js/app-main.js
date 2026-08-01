@@ -142,7 +142,8 @@ const App = {
 };
 
 const SIDEBAR_SECTIONS = {
-    asesoria: ['asesoria', 'asesoria-calendar']
+    asesoria: ['asesoria', 'asesoria-calendar'],
+    config: ['usuarios']
 };
 
 function getUser() { return Auth.getUser(); }
@@ -171,7 +172,8 @@ const SVG = {
     plus: '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
     edit: '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
-    eye: '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+    eye: '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    users: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
 };
 
 function renderSidebar() {
@@ -183,6 +185,13 @@ function renderSidebar() {
         html += `<div class="nav-section-group" id="section-asesoria">`;
         html += navI('asesoria', 'Solicitudes', SVG.list);
         html += navI('asesoria-calendar', 'Calendario', SVG.calendar);
+        html += `</div>`;
+    }
+
+    if (Auth.isAdmin() && hasSection('config')) {
+        html += `<div class="nav-section" onclick="toggleSection('config')"><span>CONFIGURACION</span><span class="toggle-icon">▼</span></div>`;
+        html += `<div class="nav-section-group" id="section-config">`;
+        html += navI('usuarios', 'Usuarios', SVG.users);
         html += `</div>`;
     }
 

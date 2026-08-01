@@ -89,6 +89,7 @@
             letter-spacing: 0.5px;
         }
 
+        .form-group select,
         .form-group input {
             width: 100%;
             padding: 14px 16px;
@@ -99,12 +100,28 @@
             font-size: 15px;
             transition: var(--transition-fast);
             outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+            cursor: pointer;
+        }
+
+        .form-group select option {
+            background: #1e293b;
+            color: #ffffff;
         }
 
         .form-group input::placeholder {
             color: rgba(255, 255, 255, 0.3);
         }
 
+        .form-group select:focus,
         .form-group input:focus {
             border-color: var(--accent);
             background: rgba(255, 255, 255, 0.1);
@@ -156,41 +173,6 @@
 
         .error-msg.show { display: block; }
 
-        .login-footer {
-            text-align: center;
-            margin-top: 28px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .login-footer p {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.35);
-        }
-
-        .demo-creds {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-            justify-content: center;
-        }
-
-        .demo-badge {
-            padding: 4px 10px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: var(--radius-full);
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            transition: var(--transition-fast);
-        }
-
-        .demo-badge:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: rgba(255, 255, 255, 0.8);
-        }
-
         @media (max-width: 480px) {
             .login-card { margin: 16px; padding: 32px 24px; }
         }
@@ -205,15 +187,19 @@
         <div class="login-header">
             <div class="login-logo">⚖</div>
             <h1>Sistema de Asesorias</h1>
-            <p>Ingrese sus credenciales para acceder</p>
+            <p>Seleccione su usuario e ingrese la contrasena</p>
         </div>
 
         <div class="error-msg" id="errorMsg"></div>
 
         <form id="loginForm" autocomplete="on">
             <div class="form-group">
-                <label for="email">Correo electronico</label>
-                <input type="email" id="email" placeholder="usuario@asesoria.cl" required autocomplete="email">
+                <label for="rol">Usuario</label>
+                <select id="rol" required>
+                    <option value="">Seleccionar usuario...</option>
+                    <option value="admin">Administrador</option>
+                    <option value="visita">Visita</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="password">Contrasena</label>
@@ -221,14 +207,6 @@
             </div>
             <button type="submit" class="btn-login" id="btnLogin">Ingresar</button>
         </form>
-
-        <div class="login-footer">
-            <p>Credenciales de demostracion</p>
-            <div class="demo-creds">
-                <span class="demo-badge" data-email="admin@asesoria.cl" data-pass="admin">Admin</span>
-                <span class="demo-badge" data-email="visita@asesoria.cl" data-pass="visita">Visita</span>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -240,18 +218,9 @@
         const errorMsg = document.getElementById('errorMsg');
         const btnLogin = document.getElementById('btnLogin');
 
-        // Redirect if already logged in
         if (localStorage.getItem('auth_token')) {
             window.location.href = 'app.html';
         }
-
-        document.querySelectorAll('.demo-badge').forEach(badge => {
-            badge.addEventListener('click', () => {
-                document.getElementById('email').value = badge.dataset.email;
-                document.getElementById('password').value = badge.dataset.pass;
-                form.dispatchEvent(new Event('submit'));
-            });
-        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -259,14 +228,14 @@
             btnLogin.disabled = true;
             btnLogin.textContent = 'Ingresando...';
 
-            const email = document.getElementById('email').value.trim();
+            const rol = document.getElementById('rol').value;
             const password = document.getElementById('password').value;
 
             try {
                 const res = await fetch(`${API}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ rol, password })
                 });
 
                 const data = await res.json();
