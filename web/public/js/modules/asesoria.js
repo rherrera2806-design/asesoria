@@ -37,7 +37,9 @@ App.registerModule('asesoria', {
                         <h2 style="margin:0;font-size:24px;font-weight:800;color:white;letter-spacing:-.5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Asesoria</h2>
                         <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,.7)">Seguimiento de solicitudes - Plazo 8 dias habiles</p>
                     </div>
-                    <div style="display:flex;gap:8px">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button onclick="App.modules.asesoria.exportarExcel()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Excel</button>
+                        <button onclick="App.modules.asesoria.exportarPDF()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> PDF</button>
                         <button onclick="App.modules.asesoria.showEstadosModal()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Estados</button>
                         <button onclick="App.modules.asesoria.showCrearModal()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,.3)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nueva Solicitud</button>
                     </div>
@@ -535,5 +537,93 @@ App.registerModule('asesoria', {
         }
         if (isNaN(d.getTime())) return '-';
         return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    },
+
+    getDiasHabiles(d) {
+        const esCerrado = d.estado_actual === 'respondido y cerrado' || d.estado_actual === 'enviado y cerrado';
+        if (esCerrado) return d.dias_habiles_total || d.dias_transcurridos || 0;
+        return d.dias_transcurridos || 0;
+    },
+
+    exportarExcel() {
+        if (!this.datos.length) {
+            App.showAlert('No hay datos para exportar', 'warning');
+            return;
+        }
+
+        const rows = this.datos.map(d => ({
+            'Codigo': d.codigo_identificacion,
+            'Remitente': d.remitente,
+            'Detalle': d.detalle_solicitud,
+            'Fecha Llegada': this.fmtDate(d.fecha_llegada),
+            'Plazo Final': this.fmtDate(d.plazo_final),
+            'Dias Habiles': this.getDiasHabiles(d),
+            'Estado': d.estado_actual
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [
+            { wch: 15 }, { wch: 25 }, { wch: 40 },
+            { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 25 }
+        ];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Asesorias');
+        const fecha = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `asesorias_${fecha}.xlsx`);
+        App.showAlert('Excel exportado correctamente');
+    },
+
+    exportarPDF() {
+        if (!this.datos.length) {
+            App.showAlert('No hay datos para exportar', 'warning');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4');
+        const fecha = new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.text('Informe de Asesorias', 14, 15);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Fecha: ${fecha}`, 14, 22);
+
+        const s = this.stats || {};
+        doc.setFontSize(9);
+        doc.text(`Total: ${s.total || 0}  |  Abiertas: ${s.abiertas || 0}  |  Respondido y Cerrado: ${s.respondido_cerrado || 0}  |  Enviado y Cerrado: ${s.enviado_cerrado || 0}  |  Vencidas: ${s.vencidas || 0}`, 14, 29);
+
+        const rows = this.datos.map(d => [
+            d.codigo_identificacion,
+            d.remitente,
+            d.detalle_solicitud.length > 40 ? d.detalle_solicitud.substring(0, 40) + '...' : d.detalle_solicitud,
+            this.fmtDate(d.fecha_llegada),
+            this.fmtDate(d.plazo_final),
+            String(this.getDiasHabiles(d)),
+            d.estado_actual
+        ]);
+
+        doc.autoTable({
+            startY: 34,
+            head: [['Codigo', 'Remitente', 'Detalle', 'Llegada', 'Plazo', 'Dias Habiles', 'Estado']],
+            body: rows,
+            styles: { fontSize: 7, cellPadding: 2 },
+            headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            columnStyles: {
+                0: { cellWidth: 22 },
+                1: { cellWidth: 35 },
+                2: { cellWidth: 60 },
+                3: { cellWidth: 20 },
+                4: { cellWidth: 20 },
+                5: { cellWidth: 18, halign: 'center' },
+                6: { cellWidth: 35 }
+            },
+            margin: { left: 14 }
+        });
+
+        doc.save(`asesorias_${new Date().toISOString().split('T')[0]}.pdf`);
+        App.showAlert('PDF exportado correctamente');
     }
 });
