@@ -196,6 +196,15 @@ function renderSidebar() {
     }
 
     nav.innerHTML = html;
+
+    const logoutHtml = `
+        <div style="margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,.1)">
+            <div onclick="Auth.logout()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;transition:background .15s;color:rgba(255,255,255,.7);font-size:13px;font-weight:500" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='transparent'">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Cerrar sesion
+            </div>
+        </div>`;
+    nav.insertAdjacentHTML('beforeend', logoutHtml);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
