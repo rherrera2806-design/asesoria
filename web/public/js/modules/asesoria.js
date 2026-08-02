@@ -32,7 +32,6 @@ App.registerModule('asesoria', {
                 .icon-btn svg{flex-shrink:0}
                 .warning-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;animation:shake 0.5s ease-in-out infinite}
                 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
-                @keyframes pulse-warning{0%,100%{background-color:transparent}50%{background-color:rgba(245,158,11,0.08)}}
             </style>
 
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1e40af 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,.3)">
@@ -182,7 +181,7 @@ App.registerModule('asesoria', {
                     </div>`;
             }
 
-            return `<tr style="${esCerrado ? 'opacity:.6' : ''} ${proximoVencer ? 'animation:pulse-warning 1.5s ease-in-out infinite' : ''}">
+            return `<tr style="${esCerrado ? 'opacity:.6' : ''}">
                 <td style="font-weight:600;color:#3b82f6">${escapeHtml(d.codigo_identificacion)}</td>
                 <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.remitente)}">${escapeHtml(d.remitente)}</td>
                 <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.detalle_solicitud)}">${escapeHtml(d.detalle_solicitud)}</td>
