@@ -132,7 +132,9 @@ const App = {
 
     toggleCollapse() {
         const sidebar = document.getElementById('sidebar');
+        const layout = document.querySelector('.app-layout');
         sidebar.classList.toggle('collapsed');
+        layout.classList.toggle('sidebar-collapsed');
         const icon = document.querySelector('#sidebarCollapseBtn svg polyline');
         if (sidebar.classList.contains('collapsed')) {
             icon.setAttribute('points', '9 18 15 12 9 6');
@@ -241,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (localStorage.getItem('sidebar_collapsed') === 'true') {
         document.getElementById('sidebar').classList.add('collapsed');
+        document.querySelector('.app-layout').classList.add('sidebar-collapsed');
         document.querySelector('#sidebarCollapseBtn svg polyline').setAttribute('points', '9 18 15 12 9 6');
     }
 });
