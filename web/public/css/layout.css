@@ -20,6 +20,46 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    transition: width var(--transition-slow);
+}
+.sidebar.collapsed {
+    width: 60px;
+    overflow: hidden;
+}
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .nav-item span,
+.sidebar.collapsed .nav-section span,
+.sidebar.collapsed .nav-section .toggle-icon,
+.sidebar.collapsed .nav-section::after,
+.sidebar.collapsed .nav-badge,
+.sidebar.collapsed #sidebarLogout span {
+    display: none;
+}
+.sidebar.collapsed .sidebar-header {
+    padding: var(--space-5) var(--space-3);
+    justify-content: center;
+}
+.sidebar.collapsed .sidebar-logo {
+    margin: 0;
+}
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 10px;
+    margin: 1px var(--space-1);
+}
+.sidebar.collapsed .nav-item .nav-icon {
+    margin: 0;
+}
+.sidebar.collapsed .nav-section {
+    padding: var(--space-4) var(--space-3) var(--space-2);
+    justify-content: center;
+}
+.sidebar.collapsed #sidebarLogout {
+    padding: 10px;
+    justify-content: center;
+}
+.sidebar.collapsed #sidebarLogout svg {
+    margin: 0;
 }
 .sidebar::before {
     content: '';

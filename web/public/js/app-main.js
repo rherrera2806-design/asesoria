@@ -130,6 +130,18 @@ const App = {
         if (backdrop) backdrop.classList.remove('show');
     },
 
+    toggleCollapse() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+        const icon = document.querySelector('#sidebarCollapseBtn svg polyline');
+        if (sidebar.classList.contains('collapsed')) {
+            icon.setAttribute('points', '9 18 15 12 9 6');
+        } else {
+            icon.setAttribute('points', '15 18 9 12 15 6');
+        }
+        localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+    },
+
     setSidebarBadge(page, count) {
         const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
         if (!navItem) return;
@@ -199,9 +211,9 @@ function renderSidebar() {
 
     const logoutHtml = `
         <div style="margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,.1)">
-            <div onclick="Auth.logout()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;transition:background .15s;color:rgba(255,255,255,.7);font-size:13px;font-weight:500" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='transparent'">
+            <div id="sidebarLogout" onclick="Auth.logout()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;transition:background .15s;color:rgba(255,255,255,.7);font-size:13px;font-weight:500" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='transparent'">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Cerrar sesion
+                <span>Cerrar sesion</span>
             </div>
         </div>`;
     nav.insertAdjacentHTML('beforeend', logoutHtml);
@@ -226,4 +238,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderSidebar();
     App.loadModule('asesoria');
+
+    if (localStorage.getItem('sidebar_collapsed') === 'true') {
+        document.getElementById('sidebar').classList.add('collapsed');
+        document.querySelector('#sidebarCollapseBtn svg polyline').setAttribute('points', '9 18 15 12 9 6');
+    }
 });
