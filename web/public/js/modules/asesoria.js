@@ -30,6 +30,9 @@ App.registerModule('asesoria', {
                 .estado-cierre{background:#d1fae5;color:#065f46}
                 .icon-btn{padding:6px!important;min-width:30px!important;min-height:30px!important;display:inline-flex!important;align-items:center;justify-content:center}
                 .icon-btn svg{flex-shrink:0}
+                .warning-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;animation:shake 0.5s ease-in-out infinite}
+                @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+                @keyframes pulse-warning{0%,100%{background-color:transparent}50%{background-color:rgba(245,158,11,0.08)}}
             </style>
 
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1e40af 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,.3)">
@@ -157,6 +160,8 @@ App.registerModule('asesoria', {
         }
         tbody.innerHTML = this.datos.map(d => {
             const esCerrado = d.estado_actual === 'respondido y cerrado' || d.estado_actual === 'enviado y cerrado';
+            const diasTranscurridos = d.dias_transcurridos || 0;
+            const proximoVencer = !esCerrado && diasTranscurridos >= 8;
 
             let progresoHtml;
             if (esCerrado) {
@@ -177,14 +182,17 @@ App.registerModule('asesoria', {
                     </div>`;
             }
 
-            return `<tr style="${esCerrado ? 'opacity:.6' : ''}">
+            return `<tr style="${esCerrado ? 'opacity:.6' : ''} ${proximoVencer ? 'animation:pulse-warning 1.5s ease-in-out infinite' : ''}">
                 <td style="font-weight:600;color:#3b82f6">${escapeHtml(d.codigo_identificacion)}</td>
                 <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.remitente)}">${escapeHtml(d.remitente)}</td>
                 <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.detalle_solicitud)}">${escapeHtml(d.detalle_solicitud)}</td>
                 <td>${this.fmtDate(d.fecha_llegada)}</td>
                 <td>${this.fmtDate(d.plazo_final)}</td>
                 <td>${progresoHtml}</td>
-                <td><span class="badge ${esCerrado ? 'badge-success' : 'badge-info'}">${d.estado_actual}</span></td>
+                <td>
+                    <span class="badge ${esCerrado ? 'badge-success' : 'badge-info'}">${d.estado_actual}</span>
+                    ${proximoVencer ? `<span class="warning-badge" title="Proximo a vencer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>` : ''}
+                </td>
                 <td>
                     <div style="display:flex;gap:4px;flex-wrap:wrap">
                         <button onclick="App.modules.asesoria.verHistorial(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Ver historial"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>

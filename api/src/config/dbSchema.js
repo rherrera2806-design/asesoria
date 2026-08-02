@@ -73,7 +73,7 @@ async function initDB() {
 function calcularPlazoFinal(fechaLlegada) {
     const fecha = new Date(fechaLlegada);
     let diasHabiles = 0;
-    while (diasHabiles < 8) {
+    while (diasHabiles < 10) {
         fecha.setDate(fecha.getDate() + 1);
         const dia = fecha.getDay();
         if (dia !== 0 && dia !== 6) {
@@ -105,9 +105,10 @@ function calcularDiasHabilesRestantes(plazoFinal) {
     hoy.setHours(0, 0, 0, 0);
     const fin = new Date(plazoFinal);
     fin.setHours(0, 0, 0, 0);
-    if (fin < hoy) return 0;
+    if (fin <= hoy) return 0;
     let dias = 0;
     const current = new Date(hoy);
+    current.setDate(current.getDate() + 1);
     while (current <= fin) {
         const dia = current.getDay();
         if (dia !== 0 && dia !== 6) {
