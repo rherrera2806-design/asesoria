@@ -68,6 +68,21 @@ async function initDB() {
         }
         console.log('[ASESORIA] Estados por defecto creados');
     }
+
+    const closedStates = await query('SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE');
+    const closedNames = closedStates.rows.map(r => r.nombre);
+    const placeholders = closedNames.map((_, i) => `$"${i + 1}"`).join(',');
+    const openResult = await query(
+        `SELECT id, fecha_llegada FROM asesorias WHERE estado_actual NOT IN (${placeholders})`,
+        closedNames
+    );
+    for (const row of openResult.rows) {
+        const nuevoPlazo = calcularPlazoFinal(row.fecha_llegada);
+        await query('UPDATE asesorias SET plazo_final = $1 WHERE id = $2', [nuevoPlazo, row.id]);
+    }
+    if (openResult.rows.length > 0) {
+        console.log(`[ASESORIA] Plazos actualizados a 10 dias habiles: ${openResult.rows.length} procesos`);
+    }
 }
 
 function calcularPlazoFinal(fechaLlegada) {
