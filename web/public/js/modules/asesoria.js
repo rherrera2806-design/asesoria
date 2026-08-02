@@ -28,6 +28,8 @@ App.registerModule('asesoria', {
                 .estado-item:hover{background:#f8fafc}
                 .estado-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:#dbeafe;color:#1e40af}
                 .estado-cierre{background:#d1fae5;color:#065f46}
+                .icon-btn{padding:6px!important;min-width:30px!important;min-height:30px!important;display:inline-flex!important;align-items:center;justify-content:center}
+                .icon-btn svg{flex-shrink:0}
             </style>
 
             <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1e40af 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,.3)">
@@ -185,10 +187,10 @@ App.registerModule('asesoria', {
                 <td><span class="badge ${esCerrado ? 'badge-success' : 'badge-info'}">${d.estado_actual}</span></td>
                 <td>
                     <div style="display:flex;gap:4px;flex-wrap:wrap">
-                        <button onclick="App.modules.asesoria.verHistorial(${d.id})" class="btn btn-sm btn-outline" title="Ver historial">Ver</button>
-                        ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showEditarModal(${d.id})" class="btn btn-sm btn-outline" title="Editar" style="color:#d97706;border-color:#f59e0b">Editar</button>` : ''}
-                        ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.eliminar(${d.id}, '${escapeHtml(d.codigo_identificacion)}')" class="btn btn-sm btn-outline" title="Eliminar" style="color:#dc2626;border-color:#fca5a5">Eliminar</button>` : ''}
-                        ${!esCerrado && Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id}, '${d.estado_actual}')" class="btn btn-sm btn-primary" title="Cambiar estado">Estado</button>` : ''}
+                        <button onclick="App.modules.asesoria.verHistorial(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Ver historial"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showEditarModal(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Editar" style="color:#d97706;border-color:#f59e0b"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+                        ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.eliminar(${d.id}, '${escapeHtml(d.codigo_identificacion)}')" class="btn btn-sm btn-outline icon-btn" title="Eliminar" style="color:#dc2626;border-color:#fca5a5"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+                        ${!esCerrado && Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id}, '${d.estado_actual}')" class="btn btn-sm btn-primary icon-btn" title="Cambiar estado"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>` : ''}
                     </div>
                 </td>
             </tr>`;
