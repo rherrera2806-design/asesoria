@@ -50,7 +50,7 @@ App.registerModule('asesoria', {
                 </div>
             </div>
 
-            <div id="asResumen" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px"></div>
+            <div id="asResumen" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;margin-bottom:20px"></div>
 
             <div style="background:white;border-radius:14px;padding:20px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:20px">
                 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
@@ -146,13 +146,24 @@ App.registerModule('asesoria', {
         const el = document.getElementById('asResumen');
         if (!el || !this.stats) return;
         const s = this.stats;
-        el.innerHTML = `
+        const cerrados = s.cerrados_por_estado || {};
+        const estadoKeys = Object.keys(cerrados);
+        const colores = ['#22c55e', '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899'];
+
+        let cardsHtml = `
             <div class="as-card stat-card"><div class="stat-value" style="color:#0f172a">${s.total || 0}</div><div class="stat-label">Total</div></div>
             <div class="as-card stat-card"><div class="stat-value" style="color:#3b82f6">${s.abiertas || 0}</div><div class="stat-label">Abiertas</div></div>
-            <div class="as-card stat-card"><div class="stat-value" style="color:#22c55e">${s.respondido_cerrado || 0}</div><div class="stat-label">Respondido y Cerrado</div></div>
-            <div class="as-card stat-card"><div class="stat-value" style="color:#8b5cf6">${s.enviado_cerrado || 0}</div><div class="stat-label">Enviado y Cerrado</div></div>
-            <div class="as-card stat-card"><div class="stat-value" style="color:#dc2626">${s.vencidas || 0}</div><div class="stat-label">Vencidas</div></div>
         `;
+
+        estadoKeys.forEach((nombre, i) => {
+            const color = colores[i % colores.length];
+            const label = nombre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            cardsHtml += `<div class="as-card stat-card"><div class="stat-value" style="color:${color}">${cerrados[nombre] || 0}</div><div class="stat-label">${label}</div></div>`;
+        });
+
+        cardsHtml += `<div class="as-card stat-card"><div class="stat-value" style="color:#dc2626">${s.vencidas || 0}</div><div class="stat-label">Vencidas</div></div>`;
+
+        el.innerHTML = cardsHtml;
     },
 
     renderTabla() {

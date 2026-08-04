@@ -218,16 +218,37 @@ const eliminarAsesoria = async (id) => {
 };
 
 const getStats = async () => {
+    const cierreResult = await query(`SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE AND activo = TRUE`);
+    const estadosCierre = cierreResult.rows.map(r => r.nombre);
+
+    if (estadosCierre.length === 0) {
+        const result = await query(`SELECT COUNT(*) as total FROM asesorias`);
+        return { total: result.rows[0].total, abiertas: result.rows[0].total, respondido_cerrado: 0, enviado_cerrado: 0, vencidas: 0 };
+    }
+
+    const placeholders = estadosCierre.map((_, i) => `$${i + 1}`).join(',');
     const result = await query(`
         SELECT
             COUNT(*) as total,
-            COUNT(*) FILTER (WHERE estado_actual NOT IN ('respondido y cerrado', 'enviado y cerrado')) as abiertas,
-            COUNT(*) FILTER (WHERE estado_actual = 'respondido y cerrado') as respondido_cerrado,
-            COUNT(*) FILTER (WHERE estado_actual = 'enviado y cerrado') as enviado_cerrado,
-            COUNT(*) FILTER (WHERE plazo_final::date < CURRENT_DATE AND estado_actual NOT IN ('respondido y cerrado', 'enviado y cerrado')) as vencidas
+            COUNT(*) FILTER (WHERE estado_actual NOT IN (${placeholders})) as abiertas,
+            COUNT(*) FILTER (WHERE plazo_final::date < CURRENT_DATE AND estado_actual NOT IN (${placeholders})) as vencidas
         FROM asesorias
-    `);
-    return result.rows[0];
+    `, [...estadosCierre, ...estadosCierre]);
+
+    const porEstado = {};
+    for (const nombre of estadosCierre) {
+        const r = await query(`SELECT COUNT(*) as c FROM asesorias WHERE estado_actual = $1`, [nombre]);
+        porEstado[nombre] = parseInt(r.rows[0].c);
+    }
+
+    return {
+        total: result.rows[0].total,
+        abiertas: result.rows[0].abiertas,
+        vencidas: result.rows[0].vencidas,
+        respondido_cerrado: Object.values(porEstado).reduce((a, b) => a + b, 0) - (porEstado[estadosCierre[estadosCierre.length - 1]] || 0),
+        enviado_cerrado: porEstado[estadosCierre[estadosCierre.length - 1]] || 0,
+        cerrados_por_estado: porEstado
+    };
 };
 
 const getPorFecha = async (fecha) => {
