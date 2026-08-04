@@ -221,34 +221,35 @@ const getStats = async () => {
     const cierreResult = await query(`SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE AND activo = TRUE`);
     const estadosCierre = cierreResult.rows.map(r => r.nombre);
 
+    const result = await query(`SELECT COUNT(*) as total FROM asesorias`);
+    const total = Number(result.rows[0].total);
+
     if (estadosCierre.length === 0) {
-        const result = await query(`SELECT COUNT(*) as total FROM asesorias`);
-        return { total: result.rows[0].total, abiertas: result.rows[0].total, cerrados: 0, vencidas: 0, cerrados_por_estado: {} };
+        return { total, abiertas: total, cerrados: 0, vencidas: 0, cerrados_por_estado: {} };
     }
 
-    const placeholders = estadosCierre.map((_, i) => `$${i + 1}`).join(',');
-    const result = await query(`
-        SELECT
-            COUNT(*) as total,
-            COUNT(*) FILTER (WHERE estado_actual NOT IN (${placeholders})) as abiertas,
-            COUNT(*) FILTER (WHERE estado_actual IN (${placeholders})) as cerrados,
-            COUNT(*) FILTER (WHERE plazo_final::date < CURRENT_DATE AND estado_actual NOT IN (${placeholders})) as vencidas
-        FROM asesorias
-    `, [...estadosCierre, ...estadosCierre, ...estadosCierre]);
-
+    const all = await query(`SELECT estado_actual, plazo_final FROM asesorias`);
+    let abiertas = 0, cerrados = 0, vencidas = 0;
     const porEstado = {};
-    for (const nombre of estadosCierre) {
-        const r = await query(`SELECT COUNT(*) as c FROM asesorias WHERE estado_actual = $1`, [nombre]);
-        porEstado[nombre] = parseInt(r.rows[0].c);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    for (const row of all.rows) {
+        const esCierre = estadosCierre.includes(row.estado_actual);
+        if (esCierre) {
+            cerrados++;
+            porEstado[row.estado_actual] = (porEstado[row.estado_actual] || 0) + 1;
+        } else {
+            abiertas++;
+            if (row.plazo_final) {
+                const [y, m, d] = row.plazo_final.split('-').map(Number);
+                const plazo = new Date(y, m - 1, d, 12, 0, 0);
+                if (plazo < hoy) vencidas++;
+            }
+        }
     }
 
-    return {
-        total: parseInt(result.rows[0].total),
-        abiertas: parseInt(result.rows[0].abiertas),
-        cerrados: parseInt(result.rows[0].cerrados),
-        vencidas: parseInt(result.rows[0].vencidas),
-        cerrados_por_estado: porEstado
-    };
+    return { total, abiertas, cerrados, vencidas, cerrados_por_estado: porEstado };
 };
 
 const getPorFecha = async (fecha) => {
