@@ -4,7 +4,8 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/asesoria',
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000
+    connectionTimeoutMillis: 5000,
+    options: '-c timezone=UTC'
 });
 
 pool.on('error', (err) => {
