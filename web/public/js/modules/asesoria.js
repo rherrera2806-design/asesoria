@@ -173,7 +173,7 @@ App.registerModule('asesoria', {
             return;
         }
         tbody.innerHTML = this.datos.map(d => {
-            const esCerrado = d.estado_actual === 'respondido y cerrado' || d.estado_actual === 'enviado y cerrado';
+            const esCerrado = d.es_cerrado === true;
             const diasTranscurridos = d.dias_transcurridos || 0;
             const proximoVencer = !esCerrado && diasTranscurridos >= 8;
 

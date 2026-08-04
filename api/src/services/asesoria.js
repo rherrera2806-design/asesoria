@@ -89,7 +89,8 @@ const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde =
     const estadosCierre = cierreResult.rows.map(r => r.nombre);
 
     for (const a of asesorias) {
-        if (estadosCierre.includes(a.estado_actual)) {
+        a.es_cerrado = estadosCierre.includes(a.estado_actual);
+        if (a.es_cerrado) {
             const histResult = await query(
                 `SELECT fecha_hora FROM asesorias_estados WHERE asesoria_id = $1 AND estado = $2 ORDER BY fecha_hora ASC LIMIT 1`,
                 [a.id, a.estado_actual]
