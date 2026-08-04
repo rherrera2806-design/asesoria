@@ -88,7 +88,7 @@ async function initDB() {
             await query('UPDATE asesorias SET plazo_final = $1 WHERE id = $2', [nuevoPlazo, row.id]);
         }
         if (openResult.rows.length > 0) {
-            console.log(`[ASESORIA] Plazos actualizados a 10 dias habiles: ${openResult.rows.length} procesos`);
+            console.log(`[ASESORIA] Plazos recalculados: ${openResult.rows.length} procesos abiertos`);
         }
     }
 }
