@@ -77,7 +77,8 @@ App.registerModule('informes', {
 
     async cargarDatos() {
         try {
-            this.datos = await App.apiFetch('/api/asesorias/informes');
+            const res = await apiFetch('/api/asesorias/informes');
+            this.datos = await res.json();
             this.renderResumen();
             this.renderChart();
             this.renderMesesBtns();
