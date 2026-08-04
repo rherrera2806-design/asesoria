@@ -71,7 +71,7 @@ async function initDB() {
 
     const closedStates = await query('SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE');
     const closedNames = closedStates.rows.map(r => r.nombre);
-    const placeholders = closedNames.map((_, i) => `$"${i + 1}"`).join(',');
+    const placeholders = closedNames.map((_, i) => `$${i + 1}`).join(',');
     const openResult = await query(
         `SELECT id, fecha_llegada FROM asesorias WHERE estado_actual NOT IN (${placeholders})`,
         closedNames
@@ -86,7 +86,7 @@ async function initDB() {
 }
 
 function calcularPlazoFinal(fechaLlegada) {
-    const fecha = new Date(fechaLlegada);
+    const fecha = new Date(fechaLlegada + 'T12:00:00');
     let diasHabiles = 0;
     while (diasHabiles < 10) {
         fecha.setDate(fecha.getDate() + 1);
@@ -95,14 +95,16 @@ function calcularPlazoFinal(fechaLlegada) {
             diasHabiles++;
         }
     }
-    return fecha.toISOString().split('T')[0];
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, '0');
+    const d = String(fecha.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
 function calcularDiasHabilesTranscurridos(fechaLlegada) {
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const inicio = new Date(fechaLlegada);
-    inicio.setHours(0, 0, 0, 0);
+    hoy.setHours(12, 0, 0, 0);
+    const inicio = new Date(fechaLlegada + 'T12:00:00');
     let dias = 0;
     const current = new Date(inicio);
     while (current <= hoy) {
@@ -117,9 +119,8 @@ function calcularDiasHabilesTranscurridos(fechaLlegada) {
 
 function calcularDiasHabilesRestantes(plazoFinal) {
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const fin = new Date(plazoFinal);
-    fin.setHours(0, 0, 0, 0);
+    hoy.setHours(12, 0, 0, 0);
+    const fin = new Date(plazoFinal + 'T12:00:00');
     if (fin <= hoy) return 0;
     let dias = 0;
     const current = new Date(hoy);
