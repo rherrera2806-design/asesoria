@@ -102,6 +102,10 @@ App.registerModule('asesoria', {
                 apiFetch('/api/estados')
             ]);
 
+            if (!res.ok) throw new Error('Error al cargar asesorias');
+            if (!statsRes.ok) throw new Error('Error al cargar estadisticas');
+            if (!estRes.ok) throw new Error('Error al cargar estados');
+
             this.datos = await res.json();
             this.stats = await statsRes.json();
             this.estados = await estRes.json();

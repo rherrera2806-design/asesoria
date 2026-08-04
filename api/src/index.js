@@ -14,7 +14,15 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(requestLogger());
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({ error: 'Demasiadas peticiones, intente mas tarde' });
+    }
+});
 app.use('/api/', limiter);
 
 app.use(require('./routes/auth'));
