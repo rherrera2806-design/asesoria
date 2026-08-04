@@ -41,7 +41,7 @@ function apiFetch(path, options = {}) {
     return fetch(`${API_BASE}${path}`, { ...options, headers }).then(res => {
         if (res.status === 401) {
             Auth.logout();
-            return Promise.reject(new Error('Sesion expirada'));
+            return Promise.reject(new Error('Sesion expirada, inicie sesion novamente'));
         }
         return res;
     });
