@@ -12,7 +12,7 @@ App.registerModule('asesoria', {
                 .as-card{transition:all .3s cubic-bezier(.4,0,.2,1)}
                 .as-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.06)!important;transform:translateY(-1px)}
                 .as-table{width:100%;font-size:12px;border-collapse:collapse}
-                .as-table th{padding:10px 12px;background:#f8fafc;color:#64748b;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1}
+                .as-table th{padding:10px 12px;background:#f8fafc;color:#64748b;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:2}
                 .as-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9}
                 .as-table tbody tr{transition:background .15s}
                 .as-table tbody tr:hover{background:#f8fafc!important}
@@ -77,7 +77,7 @@ App.registerModule('asesoria', {
             </div>
 
             <div style="background:white;border-radius:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden">
-                <div style="overflow-x:auto">
+                <div style="overflow:auto;max-height:70vh">
                     <table class="as-table">
                         <thead><tr>
                             <th>Codigo</th><th>Remitente</th><th>Detalle</th><th>Llegada</th><th>Plazo</th>
