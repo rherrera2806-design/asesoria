@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const { query } = require('./database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'asesoria-secret-key-2026';
-const JWT_EXPIRES = '24h';
+const JWT_EXPIRES = '30d';
 
 const defaultUsers = [
     { nombre: 'Administrador', email: 'admin@asesoria.cl', password: 'admin', rol: 'admin' },
