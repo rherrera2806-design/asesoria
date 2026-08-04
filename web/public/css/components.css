@@ -84,13 +84,13 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
 /* ── Stats Cards ── */
 .stat-card {
-    background: white; border-radius: var(--radius-lg); padding: 20px;
+    background: white; border-radius: var(--radius-lg); padding: 12px 8px;
     border: 1px solid var(--border); text-align: center; transition: all var(--transition-base);
     position: relative; overflow: hidden;
 }
 .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
-.stat-value { font-size: 2rem; font-weight: 800; line-height: 1; }
-.stat-label { color: var(--text-secondary); font-size: 0.75rem; font-weight: 500; margin-top: 4px; }
+.stat-value { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.stat-label { color: var(--text-secondary); font-size: 0.7rem; font-weight: 500; margin-top: 2px; }
 
 /* ── Progress Bar ── */
 .progress-bar-container {
