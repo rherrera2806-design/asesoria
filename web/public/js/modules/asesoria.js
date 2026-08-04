@@ -355,7 +355,6 @@ App.registerModule('asesoria', {
         try {
             const res = await apiFetch(`/api/asesorias/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'x-user-email': 'admin@asesoria.cl' },
                 body: JSON.stringify({ codigo_identificacion: codigo, remitente, detalle_solicitud: detalle, fecha_llegada: fecha })
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error); }

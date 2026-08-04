@@ -98,7 +98,7 @@ router.post('/api/asesorias', authenticate, requireAdmin, async (req, res, next)
 
 router.put('/api/asesorias/:id', authenticate, requireAdmin, async (req, res, next) => {
     try {
-        const email = req.headers['x-user-email'] || 'sistema';
+        const email = req.user.email;
         res.json(await asesoria.actualizarAsesoria(Number(req.params.id), req.body, email));
     } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -107,7 +107,7 @@ router.put('/api/asesorias/:id/estado', authenticate, requireAdmin, async (req, 
     const { estado, observacion } = req.body;
     if (!estado) return res.status(400).json({ error: 'Estado requerido' });
     try {
-        const email = req.headers['x-user-email'] || 'sistema';
+        const email = req.user.email;
         res.json(await asesoria.cambiarEstado(Number(req.params.id), estado, email, observacion));
     } catch (e) { res.status(400).json({ error: e.message }); }
 });

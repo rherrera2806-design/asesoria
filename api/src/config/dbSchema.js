@@ -123,13 +123,12 @@ function calcularDiasHabilesRestantes(plazoFinal) {
     if (fin <= hoy) return 0;
     let dias = 0;
     const current = new Date(hoy);
-    current.setDate(current.getDate() + 1);
-    while (current <= fin) {
+    while (current < fin) {
+        current.setDate(current.getDate() + 1);
         const dia = current.getDay();
         if (dia !== 0 && dia !== 6) {
             dias++;
         }
-        current.setDate(current.getDate() + 1);
     }
     return dias;
 }
