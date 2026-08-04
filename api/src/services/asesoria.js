@@ -214,7 +214,7 @@ const getStats = async () => {
             COUNT(*) FILTER (WHERE estado_actual NOT IN ('respondido y cerrado', 'enviado y cerrado')) as abiertas,
             COUNT(*) FILTER (WHERE estado_actual = 'respondido y cerrado') as respondido_cerrado,
             COUNT(*) FILTER (WHERE estado_actual = 'enviado y cerrado') as enviado_cerrado,
-            COUNT(*) FILTER (WHERE plazo_final < CURRENT_DATE AND estado_actual NOT IN ('respondido y cerrado', 'enviado y cerrado')) as vencidas
+            COUNT(*) FILTER (WHERE plazo_final::date < CURRENT_DATE AND estado_actual NOT IN ('respondido y cerrado', 'enviado y cerrado')) as vencidas
         FROM asesorias
     `);
     return result.rows[0];
