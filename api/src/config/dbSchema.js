@@ -26,13 +26,19 @@ async function initDB() {
         remitente VARCHAR(200) NOT NULL,
         detalle_solicitud TEXT NOT NULL,
         observacion TEXT DEFAULT '',
-        fecha_llegada DATE NOT NULL DEFAULT CURRENT_DATE,
-        plazo_final DATE NOT NULL,
+        fecha_llegada TEXT NOT NULL DEFAULT to_char(CURRENT_DATE, 'YYYY-MM-DD'),
+        plazo_final TEXT NOT NULL,
         estado_actual VARCHAR(100) DEFAULT 'en proceso',
         creado_por VARCHAR(255) DEFAULT 'sistema',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
+
+    await query(`DO $$ BEGIN
+        ALTER TABLE asesorias ALTER COLUMN fecha_llegada TYPE TEXT USING to_char(fecha_llegada::date, 'YYYY-MM-DD');
+        ALTER TABLE asesorias ALTER COLUMN plazo_final TYPE TEXT USING to_char(plazo_final::date, 'YYYY-MM-DD');
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END $$`);
 
     await query(`CREATE TABLE IF NOT EXISTS asesorias_estados (
         id SERIAL PRIMARY KEY,
@@ -71,22 +77,25 @@ async function initDB() {
 
     const closedStates = await query('SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE');
     const closedNames = closedStates.rows.map(r => r.nombre);
-    const placeholders = closedNames.map((_, i) => `$${i + 1}`).join(',');
-    const openResult = await query(
-        `SELECT id, fecha_llegada FROM asesorias WHERE estado_actual NOT IN (${placeholders})`,
-        closedNames
-    );
-    for (const row of openResult.rows) {
-        const nuevoPlazo = calcularPlazoFinal(row.fecha_llegada);
-        await query('UPDATE asesorias SET plazo_final = $1 WHERE id = $2', [nuevoPlazo, row.id]);
-    }
-    if (openResult.rows.length > 0) {
-        console.log(`[ASESORIA] Plazos actualizados a 10 dias habiles: ${openResult.rows.length} procesos`);
+    if (closedNames.length > 0) {
+        const placeholders = closedNames.map((_, i) => `$${i + 1}`).join(',');
+        const openResult = await query(
+            `SELECT id, fecha_llegada FROM asesorias WHERE estado_actual NOT IN (${placeholders})`,
+            closedNames
+        );
+        for (const row of openResult.rows) {
+            const nuevoPlazo = calcularPlazoFinal(row.fecha_llegada);
+            await query('UPDATE asesorias SET plazo_final = $1 WHERE id = $2', [nuevoPlazo, row.id]);
+        }
+        if (openResult.rows.length > 0) {
+            console.log(`[ASESORIA] Plazos actualizados a 10 dias habiles: ${openResult.rows.length} procesos`);
+        }
     }
 }
 
 function calcularPlazoFinal(fechaLlegada) {
-    const fecha = new Date(fechaLlegada + 'T12:00:00');
+    const parts = fechaLlegada.split('-');
+    const fecha = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
     let diasHabiles = 0;
     while (diasHabiles < 10) {
         fecha.setDate(fecha.getDate() + 1);
@@ -102,9 +111,10 @@ function calcularPlazoFinal(fechaLlegada) {
 }
 
 function calcularDiasHabilesTranscurridos(fechaLlegada) {
+    const parts = fechaLlegada.split('-');
+    const inicio = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
     const hoy = new Date();
     hoy.setHours(12, 0, 0, 0);
-    const inicio = new Date(fechaLlegada + 'T12:00:00');
     let dias = 0;
     const current = new Date(inicio);
     while (current <= hoy) {
@@ -118,9 +128,10 @@ function calcularDiasHabilesTranscurridos(fechaLlegada) {
 }
 
 function calcularDiasHabilesRestantes(plazoFinal) {
+    const parts = plazoFinal.split('-');
+    const fin = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
     const hoy = new Date();
     hoy.setHours(12, 0, 0, 0);
-    const fin = new Date(plazoFinal + 'T12:00:00');
     if (fin <= hoy) return 0;
     let dias = 0;
     const current = new Date(hoy);
