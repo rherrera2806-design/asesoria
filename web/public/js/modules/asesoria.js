@@ -77,7 +77,7 @@ App.registerModule('asesoria', {
             </div>
 
             <div style="background:white;border-radius:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden">
-                <div style="overflow:auto;max-height:70vh">
+                <div style="overflow:auto;max-height:50vh">
                     <table class="as-table">
                         <thead><tr>
                             <th>Codigo</th><th>Remitente</th><th>Detalle</th><th>Llegada</th><th>Plazo</th>
