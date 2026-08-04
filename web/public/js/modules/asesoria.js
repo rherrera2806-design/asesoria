@@ -130,7 +130,7 @@ App.registerModule('asesoria', {
             this.renderTabla();
         } catch (e) {
             console.error('Error:', e);
-            document.getElementById('asTabla').innerHTML = `<tr><td colspan="8" class="alert alert-danger">Error: ${e.message}</td></tr>`;
+            document.getElementById('asTabla').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:#dc2626">Error al cargar datos: ${e.message}</td></tr>`;
         }
     },
 

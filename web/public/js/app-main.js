@@ -48,7 +48,7 @@ function apiFetch(path, options = {}) {
                 container.appendChild(alert);
             }
             setTimeout(() => Auth.logout(), 2000);
-            return Promise.reject(new Error('Sesion expirada'));
+            return Promise.reject(new Error('Sesion expirada, inicie sesion novamente'));
         }
         return res;
     });
