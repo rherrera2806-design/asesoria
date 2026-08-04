@@ -237,26 +237,29 @@ const getInformesMensual = async () => {
     const cierreResult = await query(`SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE`);
     const estadosCierre = cierreResult.rows.map(r => r.nombre);
 
+    if (estadosCierre.length === 0) return [];
+
+    const placeholders = estadosCierre.map((_, i) => `$${i + 1}`).join(',');
     const result = await query(`
         SELECT a.id, a.codigo_identificacion, a.remitente, a.detalle_solicitud,
                a.fecha_llegada, a.plazo_final, a.estado_actual,
                ae.fecha_hora as fecha_cierre
         FROM asesorias a
         JOIN asesorias_estados ae ON ae.asesoria_id = a.id
-        WHERE a.estado_actual = ANY($1)
+        WHERE a.estado_actual IN (${placeholders})
         AND ae.estado = a.estado_actual
         AND ae.id = (
             SELECT MIN(ae2.id) FROM asesorias_estados ae2
             WHERE ae2.asesoria_id = a.id AND ae2.estado = a.estado_actual
         )
-    `, [estadosCierre]);
+    `, estadosCierre);
 
     const meses = {};
     for (const a of result.rows) {
-        const diasHabiles = calcularDiasHabilesTranscurridosConTope(a.fecha_llegada, new Date(a.fecha_cierre));
-        const fechaCierre = new Date(a.fecha_cierre);
-        const mesKey = `${fechaCierre.getFullYear()}-${String(fechaCierre.getMonth() + 1).padStart(2, '0')}`;
-        const mesLabel = fechaCierre.toLocaleDateString('es-CL', { year: 'numeric', month: 'long' });
+        const cierreDate = new Date(a.fecha_cierre);
+        const diasHabiles = calcularDiasHabilesTranscurridosConTope(a.fecha_llegada, cierreDate);
+        const mesKey = `${cierreDate.getFullYear()}-${String(cierreDate.getMonth() + 1).padStart(2, '0')}`;
+        const mesLabel = cierreDate.toLocaleDateString('es-CL', { year: 'numeric', month: 'long' });
 
         if (!meses[mesKey]) {
             meses[mesKey] = { mes: mesKey, mes_label: mesLabel, en_fecha: 0, fuera_de_fecha: 0, total: 0, detalles: [] };
@@ -273,7 +276,7 @@ const getInformesMensual = async () => {
             detalle: a.detalle_solicitud,
             fecha_llegada: a.fecha_llegada,
             plazo_final: a.plazo_final,
-            fecha_cierre: a.fecha_cierre.split('T')[0],
+            fecha_cierre: cierreDate.toISOString().split('T')[0],
             dias_habiles: diasHabiles,
             en_fecha: diasHabiles <= 10
         });
