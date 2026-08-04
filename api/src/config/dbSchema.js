@@ -96,11 +96,17 @@ async function initDB() {
 function calcularPlazoFinal(fechaLlegada) {
     const parts = fechaLlegada.split('-');
     const fecha = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
-    let diasHabiles = 0;
+    let diasHabiles = 1;
+    const dia = fecha.getDay();
+    if (dia === 0 || dia === 6) {
+        while (fecha.getDay() === 0 || fecha.getDay() === 6) {
+            fecha.setDate(fecha.getDate() + 1);
+        }
+    }
     while (diasHabiles < 10) {
         fecha.setDate(fecha.getDate() + 1);
-        const dia = fecha.getDay();
-        if (dia !== 0 && dia !== 6) {
+        const d = fecha.getDay();
+        if (d !== 0 && d !== 6) {
             diasHabiles++;
         }
     }
