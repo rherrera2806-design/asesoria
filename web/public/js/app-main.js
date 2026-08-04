@@ -40,8 +40,15 @@ function apiFetch(path, options = {}) {
     }
     return fetch(`${API_BASE}${path}`, { ...options, headers }).then(res => {
         if (res.status === 401) {
-            Auth.logout();
-            return Promise.reject(new Error('Sesion expirada, inicie sesion novamente'));
+            const container = document.getElementById('alertContainer');
+            if (container) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning';
+                alert.innerHTML = '<strong>Sesion expirada</strong><br>Tu sesion ha caducado. Seras redirigido al inicio de sesion...';
+                container.appendChild(alert);
+            }
+            setTimeout(() => Auth.logout(), 2000);
+            return Promise.reject(new Error('Sesion expirada'));
         }
         return res;
     });
