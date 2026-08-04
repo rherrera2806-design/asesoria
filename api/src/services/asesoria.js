@@ -223,7 +223,7 @@ const getStats = async () => {
 
     if (estadosCierre.length === 0) {
         const result = await query(`SELECT COUNT(*) as total FROM asesorias`);
-        return { total: result.rows[0].total, abiertas: result.rows[0].total, respondido_cerrado: 0, enviado_cerrado: 0, vencidas: 0 };
+        return { total: result.rows[0].total, abiertas: result.rows[0].total, cerrados: 0, vencidas: 0, cerrados_por_estado: {} };
     }
 
     const placeholders = estadosCierre.map((_, i) => `$${i + 1}`).join(',');
@@ -231,9 +231,10 @@ const getStats = async () => {
         SELECT
             COUNT(*) as total,
             COUNT(*) FILTER (WHERE estado_actual NOT IN (${placeholders})) as abiertas,
+            COUNT(*) FILTER (WHERE estado_actual IN (${placeholders})) as cerrados,
             COUNT(*) FILTER (WHERE plazo_final::date < CURRENT_DATE AND estado_actual NOT IN (${placeholders})) as vencidas
         FROM asesorias
-    `, [...estadosCierre, ...estadosCierre]);
+    `, [...estadosCierre, ...estadosCierre, ...estadosCierre]);
 
     const porEstado = {};
     for (const nombre of estadosCierre) {
@@ -242,11 +243,10 @@ const getStats = async () => {
     }
 
     return {
-        total: result.rows[0].total,
-        abiertas: result.rows[0].abiertas,
-        vencidas: result.rows[0].vencidas,
-        respondido_cerrado: Object.values(porEstado).reduce((a, b) => a + b, 0) - (porEstado[estadosCierre[estadosCierre.length - 1]] || 0),
-        enviado_cerrado: porEstado[estadosCierre[estadosCierre.length - 1]] || 0,
+        total: parseInt(result.rows[0].total),
+        abiertas: parseInt(result.rows[0].abiertas),
+        cerrados: parseInt(result.rows[0].cerrados),
+        vencidas: parseInt(result.rows[0].vencidas),
         cerrados_por_estado: porEstado
     };
 };
