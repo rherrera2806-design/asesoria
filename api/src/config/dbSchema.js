@@ -91,6 +91,32 @@ async function initDB() {
             console.log(`[ASESORIA] Plazos recalculados: ${openResult.rows.length} procesos abiertos`);
         }
     }
+
+    const allEstados = await query('SELECT nombre FROM estados_config WHERE activo = TRUE');
+    const estadosValidos = allEstados.rows.map(r => r.nombre);
+    if (estadosValidos.length > 0) {
+        const ph = estadosValidos.map((_, i) => `$${i + 1}`).join(',');
+        const orphans = await query(
+            `SELECT id, estado_actual FROM asesorias WHERE estado_actual NOT IN (${ph})`,
+            estadosValidos
+        );
+        for (const row of orphans.rows) {
+            const viejo = row.estado_actual.toLowerCase();
+            let nuevo = null;
+            if (viejo.includes('respondido') && viejo.includes('cerrado')) {
+                nuevo = estadosValidos.find(e => e.includes('respondido') && e.includes('cerrado'));
+            } else if (viejo.includes('enviado') && viejo.includes('cerrado')) {
+                nuevo = estadosValidos.find(e => e.includes('enviado') && e.includes('cerrado'));
+            }
+            if (nuevo) {
+                await query('UPDATE asesorias SET estado_actual = $1 WHERE id = $2', [nuevo, row.id]);
+                await query('UPDATE asesorias_estados SET estado = $1 WHERE asesoria_id = $2 AND estado = $3', [nuevo, row.id, row.estado_actual]);
+            }
+        }
+        if (orphans.rows.length > 0) {
+            console.log(`[ASESORIA] Estados sincronizados: ${orphans.rows.length} registros actualizados`);
+        }
+    }
 }
 
 function calcularPlazoFinal(fechaLlegada) {
