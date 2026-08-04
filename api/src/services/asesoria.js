@@ -25,11 +25,21 @@ const reordenarEstado = async (id, nuevaPosicion) => {
 };
 
 const editarEstado = async (id, nombre, cierraProceso) => {
+    const actual = await query('SELECT nombre FROM estados_config WHERE id = $1 AND activo = TRUE', [id]);
+    if (actual.rows.length === 0) throw new Error('Estado no encontrado');
+    const nombreViejo = actual.rows[0].nombre;
+    const nombreNuevo = nombre.trim().toLowerCase();
+
     const result = await query(
         'UPDATE estados_config SET nombre = $1, cierra_proceso = $2 WHERE id = $3 AND activo = TRUE RETURNING *',
-        [nombre.trim().toLowerCase(), cierraProceso, id]
+        [nombreNuevo, cierraProceso, id]
     );
-    if (result.rows.length === 0) throw new Error('Estado no encontrado');
+
+    if (nombreViejo !== nombreNuevo) {
+        await query('UPDATE asesorias SET estado_actual = $1 WHERE estado_actual = $2', [nombreNuevo, nombreViejo]);
+        await query('UPDATE asesorias_estados SET estado = $1 WHERE estado = $2', [nombreNuevo, nombreViejo]);
+    }
+
     return result.rows[0];
 };
 
