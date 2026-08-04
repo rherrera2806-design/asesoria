@@ -15,6 +15,11 @@ router.get('/api/asesorias/stats', async (req, res, next) => {
     catch (e) { next(e); }
 });
 
+router.get('/api/asesorias/informes', async (req, res, next) => {
+    try { res.json(await asesoria.getInformesMensual()); }
+    catch (e) { next(e); }
+});
+
 router.get('/api/asesorias/calendario/:fecha', async (req, res, next) => {
     try { res.json(await asesoria.getPorFecha(req.params.fecha)); }
     catch (e) { next(e); }

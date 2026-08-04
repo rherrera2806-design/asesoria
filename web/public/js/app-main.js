@@ -169,7 +169,7 @@ const App = {
 };
 
 const SIDEBAR_SECTIONS = {
-    asesoria: ['asesoria', 'asesoria-calendar'],
+    asesoria: ['asesoria', 'asesoria-calendar', 'informes'],
     config: ['usuarios']
 };
 
@@ -212,6 +212,7 @@ function renderSidebar() {
         html += `<div class="nav-section-group" id="section-asesoria">`;
         html += navI('asesoria', 'Solicitudes', SVG.list);
         html += navI('asesoria-calendar', 'Calendario', SVG.calendar);
+        html += navI('informes', 'Informes', SVG.chart);
         html += `</div>`;
     }
 

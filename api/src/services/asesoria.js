@@ -233,6 +233,55 @@ const getPorFecha = async (fecha) => {
     });
 };
 
+const getInformesMensual = async () => {
+    const cierreResult = await query(`SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE`);
+    const estadosCierre = cierreResult.rows.map(r => r.nombre);
+
+    const result = await query(`
+        SELECT a.id, a.codigo_identificacion, a.remitente, a.detalle_solicitud,
+               a.fecha_llegada, a.plazo_final, a.estado_actual,
+               ae.fecha_hora as fecha_cierre
+        FROM asesorias a
+        JOIN asesorias_estados ae ON ae.asesoria_id = a.id
+        WHERE a.estado_actual = ANY($1)
+        AND ae.estado = a.estado_actual
+        AND ae.id = (
+            SELECT MIN(ae2.id) FROM asesorias_estados ae2
+            WHERE ae2.asesoria_id = a.id AND ae2.estado = a.estado_actual
+        )
+    `, [estadosCierre]);
+
+    const meses = {};
+    for (const a of result.rows) {
+        const diasHabiles = calcularDiasHabilesTranscurridosConTope(a.fecha_llegada, new Date(a.fecha_cierre));
+        const fechaCierre = new Date(a.fecha_cierre);
+        const mesKey = `${fechaCierre.getFullYear()}-${String(fechaCierre.getMonth() + 1).padStart(2, '0')}`;
+        const mesLabel = fechaCierre.toLocaleDateString('es-CL', { year: 'numeric', month: 'long' });
+
+        if (!meses[mesKey]) {
+            meses[mesKey] = { mes: mesKey, mes_label: mesLabel, en_fecha: 0, fuera_de_fecha: 0, total: 0, detalles: [] };
+        }
+        meses[mesKey].total++;
+        if (diasHabiles <= 10) {
+            meses[mesKey].en_fecha++;
+        } else {
+            meses[mesKey].fuera_de_fecha++;
+        }
+        meses[mesKey].detalles.push({
+            codigo: a.codigo_identificacion,
+            remitente: a.remitente,
+            detalle: a.detalle_solicitud,
+            fecha_llegada: a.fecha_llegada,
+            plazo_final: a.plazo_final,
+            fecha_cierre: a.fecha_cierre.split('T')[0],
+            dias_habiles: diasHabiles,
+            en_fecha: diasHabiles <= 10
+        });
+    }
+
+    return Object.values(meses).sort((a, b) => b.mes.localeCompare(a.mes));
+};
+
 module.exports = {
     getEstados,
     crearEstado,
@@ -248,5 +297,6 @@ module.exports = {
     cambiarEstado,
     eliminarAsesoria,
     getStats,
-    getPorFecha
+    getPorFecha,
+    getInformesMensual
 };
