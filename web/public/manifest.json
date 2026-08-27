@@ -1,7 +1,7 @@
 {
-  "name": "Asesoria - Seguimiento",
+  "name": "Asesoria",
   "short_name": "Asesoria",
-  "description": "Sistema de seguimiento de asesorias",
+  "description": "Seguimiento de asesorias",
   "start_url": "/app.html",
   "display": "standalone",
   "background_color": "#0f172a",

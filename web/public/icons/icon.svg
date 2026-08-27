@@ -1,13 +1,103 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0f172a"/>
-      <stop offset="50%" style="stop-color:#1e3a5f"/>
-      <stop offset="100%" style="stop-color:#1e40af"/>
+      <stop offset="0%" style="stop-color:#fbbf24"/>
+      <stop offset="50%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
     </linearGradient>
+    <linearGradient id="shadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(0,0,0,0.15)"/>
+      <stop offset="100%" style="stop-color:rgba(0,0,0,0.4)"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b"/>
+      <stop offset="50%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#020617"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b"/>
+      <stop offset="100%" style="stop-color:#0f172a"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="innerShadow">
+      <feOffset dx="0" dy="4"/>
+      <feGaussianBlur stdDeviation="4"/>
+      <feComposite operator="out" in="SourceGraphic"/>
+      <feFlood flood-color="#000" flood-opacity="0.25"/>
+      <feComposite operator="in" in2="A"/>
+      <feComposite operator="over" in="SourceGraphic"/>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  <text x="256" y="320" font-family="Arial,Helvetica,sans-serif" font-size="280" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-10">A</text>
-  <circle cx="400" cy="120" r="60" fill="#f59e0b" opacity="0.9"/>
-  <text x="400" y="145" font-family="Arial,Helvetica,sans-serif" font-size="60" font-weight="900" fill="#0f172a" text-anchor="middle">★</text>
+  
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  
+  <!-- Subtle inner border -->
+  <rect x="8" y="8" width="496" height="496" rx="100" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3"/>
+  
+  <!-- Top highlight -->
+  <ellipse cx="256" cy="100" rx="180" ry="80" fill="rgba(255,255,255,0.15)"/>
+  
+  <!-- Shadow under scales -->
+  <ellipse cx="256" cy="440" rx="120" ry="16" fill="rgba(0,0,0,0.2)"/>
+  
+  <!-- Center pole -->
+  <rect x="248" y="120" width="16" height="280" rx="4" fill="url(#metal)"/>
+  
+  <!-- Pole highlight -->
+  <rect x="250" y="120" width="4" height="280" rx="2" fill="rgba(255,255,255,0.15)"/>
+  
+  <!-- Top ornament -->
+  <circle cx="256" cy="112" r="18" fill="url(#metal)"/>
+  <circle cx="256" cy="112" r="12" fill="#1e293b"/>
+  <circle cx="256" cy="112" r="6" fill="#334155"/>
+  <circle cx="253" cy="109" r="3" fill="rgba(255,255,255,0.3)"/>
+  
+  <!-- Crossbar -->
+  <rect x="96" y="156" width="320" height="10" rx="5" fill="url(#metal)"/>
+  <rect x="96" y="157" width="320" height="3" rx="1.5" fill="rgba(255,255,255,0.1)"/>
+  
+  <!-- Left chain -->
+  <line x1="130" y1="166" x2="110" y2="260" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+  <line x1="130" y1="166" x2="150" y2="260" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- Right chain -->
+  <line x1="382" y1="166" x2="362" y2="260" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+  <line x1="382" y1="166" x2="402" y2="260" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- Left plate -->
+  <ellipse cx="130" cy="272" rx="80" ry="20" fill="url(#plate)"/>
+  <ellipse cx="130" cy="268" rx="76" ry="16" fill="#1e293b"/>
+  <ellipse cx="130" cy="265" rx="70" ry="12" fill="#334155"/>
+  <ellipse cx="120" cy="262" rx="30" ry="5" fill="rgba(255,255,255,0.1)"/>
+  
+  <!-- Right plate -->
+  <ellipse cx="382" cy="272" rx="80" ry="20" fill="url(#plate)"/>
+  <ellipse cx="382" cy="268" rx="76" ry="16" fill="#1e293b"/>
+  <ellipse cx="382" cy="265" rx="70" ry="12" fill="#334155"/>
+  <ellipse cx="372" cy="262" rx="30" ry="5" fill="rgba(255,255,255,0.1)"/>
+  
+  <!-- Left plate shine -->
+  <path d="M70 260 Q130 240 190 260" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+  
+  <!-- Right plate shine -->
+  <path d="M322 260 Q382 240 442 260" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+  
+  <!-- Base -->
+  <ellipse cx="256" cy="420" rx="90" ry="22" fill="url(#metal)"/>
+  <ellipse cx="256" cy="416" rx="85" ry="18" fill="#1e293b"/>
+  <ellipse cx="256" cy="413" rx="78" ry="14" fill="#334155"/>
+  <ellipse cx="246" cy="410" rx="35" ry="6" fill="rgba(255,255,255,0.1)"/>
+  
+  <!-- Base shine -->
+  <path d="M180 410 Q256 395 332 410" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+  
+  <!-- Left weight symbol -->
+  <circle cx="130" cy="250" r="8" fill="#f59e0b" opacity="0.8"/>
+  
+  <!-- Right weight symbol -->
+  <circle cx="382" cy="250" r="8" fill="#f59e0b" opacity="0.8"/>
 </svg>
