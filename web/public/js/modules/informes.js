@@ -7,13 +7,6 @@ App.registerModule('informes', {
         el.innerHTML = `
             <style>
                 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-                .inf-card{transition:all .3s cubic-bezier(.4,0,.2,1)}
-                .inf-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.06)!important;transform:translateY(-1px)}
-                .inf-table{width:100%;font-size:12px;border-collapse:collapse}
-                .inf-table th{padding:10px 12px;background:#f8fafc;color:#64748b;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:2}
-                .inf-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9}
-                .inf-table tbody tr{transition:background .15s}
-                .inf-table tbody tr:hover{background:#f8fafc!important}
                 .inf-bar-group{display:flex;gap:4px;align-items:end;height:120px;padding:0 8px}
                 .inf-bar{border-radius:4px 4px 0 0;transition:height .4s ease;min-width:28px;cursor:pointer;position:relative}
                 .inf-bar:hover{opacity:.85}
@@ -25,49 +18,51 @@ App.registerModule('informes', {
                 .inf-mes-btn{padding:8px 14px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:12px;font-weight:600;color:#334155;transition:all .15s}
                 .inf-mes-btn:hover{background:#f8fafc;border-color:#cbd5e1}
                 .inf-mes-btn.active{background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border-color:#3b82f6;box-shadow:0 2px 8px rgba(59,130,246,.3)}
+                @media(max-width:768px){
+                    .inf-mes-btns{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+                    .inf-mes-btn{flex-shrink:0;font-size:11px;padding:6px 10px}
+                    .inf-chart-bar{height:80px!important}
+                    .inf-legend{gap:10px}
+                    .inf-legend-item{font-size:10px}
+                }
             </style>
 
-            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1e40af 100%);border-radius:12px;padding:14px 20px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,.3)">
-                <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 70%);border-radius:50%"></div>
-                <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
-                    <div>
-                        <h2 style="margin:0;font-size:18px;font-weight:800;color:white;letter-spacing:-.5px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Informes</h2>
-                        <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.7)">Completados por mes</p>
+            <div class="m-page">
+                <div class="m-hero">
+                    <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Informes</h2>
+                            <p>Completados por mes</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="infResumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px"></div>
+                <div id="infResumen" class="m-stats" style="grid-template-columns:repeat(3,1fr)"></div>
 
-            <div style="background:white;border-radius:14px;padding:20px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:20px">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                    <h3 style="margin:0;font-size:14px;font-weight:700;color:#0f172a">Progresion mensual</h3>
-                    <div id="infLegend" class="inf-legend"></div>
+                <div class="m-card" style="margin-bottom:16px">
+                    <div class="m-card-header">
+                        <h3>Progresion mensual</h3>
+                        <div id="infLegend" class="inf-legend" style="margin:0"></div>
+                    </div>
+                    <div class="m-card-body" id="infChart" style="padding-bottom:24px"></div>
                 </div>
-                <div id="infChart" style="padding-bottom:24px"></div>
-            </div>
 
-            <div id="infMesesBtns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
+                <div id="infMesesBtns" class="inf-mes-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
 
-            <div style="background:white;border-radius:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden">
-                <div style="overflow:auto;max-height:50vh">
-                    <table class="inf-table">
-                        <thead>
-                            <tr>
-                                <th>Codigo</th>
-                                <th>Remitente</th>
-                                <th>Detalle</th>
-                                <th>Llegada</th>
-                                <th>Plazo</th>
-                                <th>Cierre</th>
-                                <th>Dias Habiles</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="infTablaBody">
-                            <tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8">Cargando informes...</td></tr>
-                        </tbody>
-                    </table>
+                <div class="m-card">
+                    <div class="m-table-wrap" style="max-height:50vh;overflow:auto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Codigo</th><th>Remitente</th><th>Detalle</th><th>Llegada</th><th>Plazo</th><th>Cierre</th><th>Dias</th><th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="infTablaBody">
+                                <tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8">Cargando informes...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="m-cards-mobile" id="infCardsMobile"></div>
                 </div>
             </div>
         `;
@@ -102,20 +97,9 @@ App.registerModule('informes', {
         const pctEnFecha = totalGeneral > 0 ? Math.round((totalEnFecha / totalGeneral) * 100) : 0;
 
         el.innerHTML = `
-            <div class="inf-card" style="background:white;border-radius:14px;padding:16px;border:1px solid #e2e8f0;text-align:center">
-                <div style="font-size:1.5rem;font-weight:800;color:#22c55e;line-height:1">${totalEnFecha}</div>
-                <div style="color:#64748b;font-size:11px;font-weight:500;margin-top:4px">En fecha</div>
-                <div style="margin-top:6px;font-size:10px;color:#22c55e;font-weight:600">${pctEnFecha}%</div>
-            </div>
-            <div class="inf-card" style="background:white;border-radius:14px;padding:16px;border:1px solid #e2e8f0;text-align:center">
-                <div style="font-size:1.5rem;font-weight:800;color:#ef4444;line-height:1">${totalFuera}</div>
-                <div style="color:#64748b;font-size:11px;font-weight:500;margin-top:4px">Fuera de fecha</div>
-                <div style="margin-top:6px;font-size:10px;color:#ef4444;font-weight:600">${100 - pctEnFecha}%</div>
-            </div>
-            <div class="inf-card" style="background:white;border-radius:14px;padding:16px;border:1px solid #e2e8f0;text-align:center">
-                <div style="font-size:1.5rem;font-weight:800;color:#0f172a;line-height:1">${totalGeneral}</div>
-                <div style="color:#64748b;font-size:11px;font-weight:500;margin-top:4px">Total cerrados</div>
-            </div>
+            <div class="m-stat-card stat-green"><div class="m-stat-value">${totalEnFecha}</div><div class="m-stat-label">En fecha</div><div style="font-size:9px;color:#059669;font-weight:600;margin-top:2px">${pctEnFecha}%</div></div>
+            <div class="m-stat-card stat-red"><div class="m-stat-value">${totalFuera}</div><div class="m-stat-label">Fuera de fecha</div><div style="font-size:9px;color:#dc2626;font-weight:600;margin-top:2px">${100 - pctEnFecha}%</div></div>
+            <div class="m-stat-card stat-info"><div class="m-stat-value">${totalGeneral}</div><div class="m-stat-label">Total cerrados</div></div>
         `;
     },
 
@@ -174,6 +158,7 @@ App.registerModule('informes', {
 
     renderTabla() {
         const el = document.getElementById('infTablaBody');
+        const cardsMobile = document.getElementById('infCardsMobile');
         if (!el) return;
 
         let detalles = [];
@@ -186,34 +171,57 @@ App.registerModule('informes', {
 
         if (!detalles.length) {
             el.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8">No hay datos para mostrar</td></tr>';
+            if (cardsMobile) cardsMobile.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8">No hay datos para mostrar</div>';
             return;
         }
 
-        el.innerHTML = detalles.map(d => `
-            <tr style="animation:fadeUp .3s ease">
+        let tableHtml = '';
+        let cardsHtml = '';
+
+        detalles.forEach(d => {
+            const estadoBadge = d.en_fecha
+                ? '<span class="badge badge-success" style="font-size:10px">En fecha</span>'
+                : '<span class="badge badge-danger" style="font-size:10px">Fuera de fecha</span>';
+
+            const diasBadge = `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;${d.en_fecha
+                ? 'background:#d1fae5;color:#065f46'
+                : 'background:#fee2e2;color:#991b1b'
+            }">
+                ${d.en_fecha
+                    ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
+                    : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                }
+                ${d.dias_habiles}d
+            </span>`;
+
+            tableHtml += `<tr style="animation:fadeUp .3s ease">
                 <td style="font-weight:600;color:#3b82f6">${d.codigo}</td>
                 <td style="font-weight:500">${d.remitente}</td>
                 <td style="color:#64748b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.detalle}</td>
                 <td>${d.fecha_llegada}</td>
                 <td>${d.plazo_final}</td>
                 <td>${d.fecha_cierre}</td>
-                <td style="text-align:center">
-                    <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;${d.en_fecha
-                        ? 'background:#d1fae5;color:#065f46'
-                        : 'background:#fee2e2;color:#991b1b'
-                    }">
-                        ${d.en_fecha
-                            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
-                            : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-                        }
-                        ${d.dias_habiles} dias
-                    </span>
-                </td>
-                <td>${d.en_fecha
-                    ? '<span style="font-size:11px;font-weight:600;color:#065f46">En fecha</span>'
-                    : '<span style="font-size:11px;font-weight:600;color:#991b1b">Fuera de fecha</span>'
-                }</td>
-            </tr>
-        `).join('');
+                <td style="text-align:center">${diasBadge}</td>
+                <td>${estadoBadge}</td>
+            </tr>`;
+
+            cardsHtml += `<div class="m-mobile-card" style="animation:fadeUp .3s ease">
+                <div class="m-mobile-card-header">
+                    <div>
+                        <div class="m-mobile-card-title">${d.codigo}</div>
+                        <div class="m-mobile-card-subtitle">${d.remitente}</div>
+                    </div>
+                    ${estadoBadge}
+                </div>
+                <div class="m-mobile-card-detail">${d.detalle}</div>
+                <div class="m-mobile-card-footer">
+                    <div class="m-mobile-card-meta">Llegada: ${d.fecha_llegada} | Plazo: ${d.plazo_final} | Cierre: ${d.fecha_cierre}</div>
+                    ${diasBadge}
+                </div>
+            </div>`;
+        });
+
+        el.innerHTML = tableHtml;
+        if (cardsMobile) cardsMobile.innerHTML = cardsHtml;
     }
 });

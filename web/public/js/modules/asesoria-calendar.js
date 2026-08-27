@@ -32,43 +32,62 @@ App.registerModule('asesoria-calendar', {
                 .cal-legend{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
                 .cal-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#64748b}
                 .cal-legend-dot{width:12px;height:12px;border-radius:3px}
+                @media(max-width:768px){
+                    .cal-grid{gap:4px}
+                    .cal-dia{padding:6px;min-height:60px}
+                    .cal-dia-num{font-size:12px}
+                    .cal-item{font-size:9px;padding:3px 4px}
+                    .cal-dia-count{font-size:9px;padding:1px 5px}
+                    .cal-legend{gap:10px}
+                    .cal-legend-item{font-size:10px}
+                    .cal-nav{flex-direction:column;gap:6px}
+                    .cal-nav .btn{width:100%}
+                    .cal-detalle-card{padding:12px!important}
+                    .cal-detalle-row{flex-direction:column;gap:8px!important}
+                }
             </style>
 
-            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1e40af 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,.3)">
-                <div style="position:relative;z-index:1">
-                    <h2 style="margin:0;font-size:24px;font-weight:800;color:white"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendario de Vencimientos</h2>
-                    <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,.7)">Dias de plazo final por solicitud</p>
+            <div class="m-page">
+                <div class="m-hero">
+                    <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendario</h2>
+                            <p>Vencimientos por solicitud</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="cal-legend">
-                <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fee2e2;border-left:3px solid #dc2626"></div> Vencido</div>
-                <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fef3c7;border-left:3px solid #f59e0b"></div> Por vencer</div>
-                <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#d1fae5;border-left:3px solid #22c55e"></div> En plazo</div>
-                <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#dbeafe;border-left:3px solid #3b82f6"></div> Enviado</div>
-            </div>
+                <div class="cal-legend">
+                    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fee2e2;border-left:3px solid #dc2626"></div> Vencido</div>
+                    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fef3c7;border-left:3px solid #f59e0b"></div> Por vencer</div>
+                    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#d1fae5;border-left:3px solid #22c55e"></div> En plazo</div>
+                    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#dbeafe;border-left:3px solid #3b82f6"></div> Enviado</div>
+                </div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-                <button onclick="App.modules['asesoria-calendar'].mesAnterior()" class="btn btn-outline">← Anterior</button>
-                <h3 id="calHeader" style="margin:0;color:#0f172a;font-size:18px"></h3>
-                <button onclick="App.modules['asesoria-calendar'].mesSiguiente()" class="btn btn-outline">Siguiente →</button>
-            </div>
+                <div class="cal-nav" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                    <button onclick="App.modules['asesoria-calendar'].mesAnterior()" class="btn btn-outline">← Anterior</button>
+                    <h3 id="calHeader" style="margin:0;color:#0f172a;font-size:16px"></h3>
+                    <button onclick="App.modules['asesoria-calendar'].mesSiguiente()" class="btn btn-outline">Siguiente →</button>
+                </div>
 
-            <div style="display:flex;gap:6px;margin-bottom:8px;color:#64748b;font-size:11px;font-weight:600">
-                <div style="flex:1;text-align:center">Dom</div>
-                <div style="flex:1;text-align:center">Lun</div>
-                <div style="flex:1;text-align:center">Mar</div>
-                <div style="flex:1;text-align:center">Mie</div>
-                <div style="flex:1;text-align:center">Jue</div>
-                <div style="flex:1;text-align:center">Vie</div>
-                <div style="flex:1;text-align:center">Sab</div>
-            </div>
+                <div style="display:flex;gap:6px;margin-bottom:8px;color:#64748b;font-size:11px;font-weight:600">
+                    <div style="flex:1;text-align:center">Dom</div>
+                    <div style="flex:1;text-align:center">Lun</div>
+                    <div style="flex:1;text-align:center">Mar</div>
+                    <div style="flex:1;text-align:center">Mie</div>
+                    <div style="flex:1;text-align:center">Jue</div>
+                    <div style="flex:1;text-align:center">Vie</div>
+                    <div style="flex:1;text-align:center">Sab</div>
+                </div>
 
-            <div id="calGrid" class="cal-grid"></div>
+                <div id="calGrid" class="cal-grid"></div>
 
-            <div id="calDetalle" style="display:none;margin-top:20px;background:white;border-radius:14px;padding:20px;border:1px solid #e2e8f0">
-                <h3 id="calDetalleTitle" style="margin:0 0 16px;color:#0f172a"></h3>
-                <div id="calDetalleList"></div>
+                <div id="calDetalle" style="display:none;margin-top:16px">
+                    <div class="m-card">
+                        <div class="m-card-header"><h3 id="calDetalleTitle"></h3></div>
+                        <div class="m-card-body" id="calDetalleList"></div>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -172,19 +191,21 @@ App.registerModule('asesoria-calendar', {
                 const estadoClass = { 'en proceso': 'badge-info', 'en preparacion': 'badge-warning', 'enviado': 'badge-success' }[d.estado_actual] || 'badge-neutral';
 
                 return `
-                    <div style="padding:14px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;display:flex;align-items:center;gap:16px">
-                        <div style="flex:1">
-                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                                <span style="font-weight:700;color:#3b82f6;font-size:14px">${escapeHtml(d.codigo_identificacion)}</span>
-                                <span class="badge ${estadoClass}">${d.estado_actual}</span>
+                    <div class="cal-detalle-card" style="padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px">
+                        <div class="cal-detalle-row" style="display:flex;align-items:center;gap:12px">
+                            <div style="flex:1;min-width:0">
+                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+                                    <span style="font-weight:700;color:#3b82f6;font-size:13px">${escapeHtml(d.codigo_identificacion)}</span>
+                                    <span class="badge ${estadoClass}" style="font-size:10px">${d.estado_actual}</span>
+                                </div>
+                                <div style="font-size:11px;color:#0f172a;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.detalle_solicitud)}</div>
+                                <div style="font-size:10px;color:#64748b;margin-top:2px">${escapeHtml(d.remitente)} | ${this.fmtDate(d.fecha_llegada)}</div>
                             </div>
-                            <div style="font-size:12px;color:#0f172a;font-weight:500">${escapeHtml(d.detalle_solicitud)}</div>
-                            <div style="font-size:11px;color:#64748b;margin-top:2px">${escapeHtml(d.remitente)} | Llegada: ${this.fmtDate(d.fecha_llegada)}</div>
-                        </div>
-                        <div style="flex:1">
-                            <div class="progress-container">
-                                <div class="progress-bar ${color}" style="width:${pct}%"></div>
-                                <div class="progress-text">${d.dias_transcurridos} / ${total} dias</div>
+                            <div style="flex:1;min-width:120px">
+                                <div class="progress-container" style="min-width:100px;height:18px">
+                                    <div class="progress-bar ${color}" style="width:${pct}%"></div>
+                                    <div class="progress-text" style="font-size:9px">${d.dias_transcurridos} / ${total}</div>
+                                </div>
                             </div>
                         </div>
                     </div>`;
