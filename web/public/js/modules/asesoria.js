@@ -118,7 +118,9 @@ App.registerModule('asesoria', {
                     d.detalle_solicitud.toLowerCase().includes(f)
                 );
             }
-            if (this.filtros.estado) {
+            if (this.filtros.estado === 'abiertas') {
+                this.datos = this.datos.filter(d => !d.es_cerrado);
+            } else if (this.filtros.estado) {
                 this.datos = this.datos.filter(d => d.estado_actual === this.filtros.estado);
             }
             if (this.filtros.plazo !== 'todos') {
@@ -139,6 +141,7 @@ App.registerModule('asesoria', {
         if (!sel) return;
         const val = sel.value;
         sel.innerHTML = '<option value="">Todos</option>' +
+            '<option value="abiertas" ' + (val === 'abiertas' ? 'selected' : '') + '>Abiertas (sin cerradas)</option>' +
             this.estados.map(e => `<option value="${e.nombre}" ${e.nombre === val ? 'selected' : ''}>${e.nombre}</option>`).join('');
     },
 
