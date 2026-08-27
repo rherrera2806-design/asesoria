@@ -244,33 +244,38 @@
 @media (max-width: 768px) {
     /* Hero */
     .m-hero {
-        padding: 12px;
+        padding: 10px 14px;
         border-radius: 12px;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
     }
+    .m-hero h2 { font-size: 14px; }
     .m-hero-btns {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
     }
     .m-hero-btns .btn {
-        height: 40px;
-        min-height: 40px;
-        flex: 1;
-        font-size: 12px;
+        height: 34px;
+        min-height: 34px;
+        font-size: 11px;
+        padding: 4px 8px;
     }
+    .m-hero-btns .btn svg { width: 13px; height: 13px; }
 
     /* Stats */
     .m-stats {
         grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
+        gap: 6px;
+        margin-bottom: 12px;
     }
     .m-stat-card {
-        padding: 10px 8px;
+        padding: 8px 6px;
     }
     .m-stat-value {
-        font-size: 16px;
+        font-size: 14px;
     }
     .m-stat-label {
-        font-size: 8px;
+        font-size: 7px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -288,19 +293,25 @@
 
     /* Filters */
     .m-filters {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 6px;
     }
+    .m-filters > div:first-child {
+        grid-column: span 2;
+    }
+    .m-filters .form-label { font-size: 9px; margin-bottom: 1px; }
+    .m-filters .form-control { padding: 8px 10px; font-size: 12px; }
 
     /* Actions */
     .m-actions {
-        flex-direction: column;
+        flex-direction: row;
         gap: 6px;
     }
     .m-actions .btn {
-        width: 100%;
-        height: 40px;
-        font-size: 12px;
+        flex: 1;
+        height: 36px;
+        font-size: 11px;
     }
 
     /* Card */
@@ -323,41 +334,45 @@
     .m-mobile-card {
         background: white;
         border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 12px 14px;
-        margin-bottom: 10px;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
     }
     .m-mobile-card-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     .m-mobile-card-title {
         font-weight: 700;
-        font-size: 13px;
+        font-size: 12px;
         color: #0f172a;
     }
     .m-mobile-card-subtitle {
-        font-size: 11px;
+        font-size: 10px;
         color: #64748b;
-        margin-top: 2px;
+        margin-top: 1px;
     }
     .m-mobile-card-detail {
-        font-size: 12px;
+        font-size: 11px;
         color: #475569;
-        margin-bottom: 8px;
-        line-height: 1.4;
+        margin-bottom: 6px;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
     .m-mobile-card-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
     }
     .m-mobile-card-meta {
-        font-size: 10px;
+        font-size: 9px;
         color: #94a3b8;
     }
     .m-mobile-card-actions {
