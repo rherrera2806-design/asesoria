@@ -153,20 +153,43 @@ App.registerModule('asesoria', {
         const estadoKeys = Object.keys(cerrados);
         const statClasses = ['stat-info', 'stat-green', 'stat-purple', 'stat-amber', 'stat-red'];
 
+        const currentFilter = this.filtros.estado || '';
+        const currentPlazo = this.filtros.plazo || 'todos';
+
         let cardsHtml = `
-            <div class="m-stat-card stat-info"><div class="m-stat-value">${s.total || 0}</div><div class="m-stat-label">Total</div></div>
-            <div class="m-stat-card stat-blue"><div class="m-stat-value">${s.abiertas || 0}</div><div class="m-stat-label">Abiertas</div></div>
+            <div class="m-stat-card stat-info ${currentFilter === '' && currentPlazo === 'todos' ? 'stat-active' : ''}" onclick="App.modules.asesoria.filtrarPorStat('')" style="cursor:pointer"><div class="m-stat-value">${s.total || 0}</div><div class="m-stat-label">Total</div></div>
+            <div class="m-stat-card stat-blue ${currentFilter === 'abiertas' ? 'stat-active' : ''}" onclick="App.modules.asesoria.filtrarPorStat('abiertas')" style="cursor:pointer"><div class="m-stat-value">${s.abiertas || 0}</div><div class="m-stat-label">Abiertas</div></div>
         `;
 
         estadoKeys.forEach((nombre, i) => {
             const cls = statClasses[i % statClasses.length];
             const label = nombre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            cardsHtml += `<div class="m-stat-card ${cls}"><div class="m-stat-value">${cerrados[nombre] || 0}</div><div class="m-stat-label">${label}</div></div>`;
+            cardsHtml += `<div class="m-stat-card ${cls} ${currentFilter === nombre ? 'stat-active' : ''}" onclick="App.modules.asesoria.filtrarPorStat('${escapeAttr(nombre)}')" style="cursor:pointer"><div class="m-stat-value">${cerrados[nombre] || 0}</div><div class="m-stat-label">${label}</div></div>`;
         });
 
-        cardsHtml += `<div class="m-stat-card stat-red"><div class="m-stat-value">${s.vencidas || 0}</div><div class="m-stat-label">Vencidas</div></div>`;
+        cardsHtml += `<div class="m-stat-card stat-red ${currentPlazo === 'vencido' && currentFilter === '' ? 'stat-active' : ''}" onclick="App.modules.asesoria.filtrarPorStatVencidas()" style="cursor:pointer"><div class="m-stat-value">${s.vencidas || 0}</div><div class="m-stat-label">Vencidas</div></div>`;
 
         el.innerHTML = cardsHtml;
+    },
+
+    filtrarPorStat(estado) {
+        this.filtros.estado = estado;
+        this.filtros.plazo = 'todos';
+        this.filtros.busqueda = '';
+        document.getElementById('asEstado').value = estado;
+        document.getElementById('asPlazo').value = 'todos';
+        document.getElementById('asBusqueda').value = '';
+        this.cargarDatos();
+    },
+
+    filtrarPorStatVencidas() {
+        this.filtros.estado = '';
+        this.filtros.plazo = 'vencido';
+        this.filtros.busqueda = '';
+        document.getElementById('asEstado').value = '';
+        document.getElementById('asPlazo').value = 'vencido';
+        document.getElementById('asBusqueda').value = '';
+        this.cargarDatos();
     },
 
     renderTabla() {
