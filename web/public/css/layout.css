@@ -191,30 +191,16 @@
     }
     .sidebar.open { left: 0; }
     .menu-toggle { display: flex; }
-    .main-content { padding: var(--space-3); }
     .header { padding: 0 var(--space-3); }
     .header-date { display: none; }
 
     .nav-item { padding: 14px var(--space-5); font-size: 0.875rem; min-height: 48px; }
     .btn { min-height: 44px; font-size: 0.875rem; }
     .form-control { font-size: 16px; min-height: 44px; }
-
-    .as-table { font-size: 11px; }
-    .as-table th, .as-table td { padding: 8px 6px; }
-    .progress-container { min-width: 120px; }
-
-    #asResumen { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
 @media (max-width: 480px) {
     .main-content { padding: var(--space-2); }
-    #asResumen { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-    .stat-card { padding: 12px !important; }
-    .as-table { font-size: 10px; }
-    .as-table th:nth-child(4), .as-table td:nth-child(4),
-    .as-table th:nth-child(5), .as-table td:nth-child(5) { display: none; }
-    .progress-container { min-width: 100px; }
-    .progress-text { font-size: 9px; }
 }
 
 @media print {

@@ -11,11 +11,6 @@ App.registerModule('asesoria', {
                 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
                 .as-card{transition:all .3s cubic-bezier(.4,0,.2,1)}
                 .as-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.06)!important;transform:translateY(-1px)}
-                .as-table{width:100%;font-size:12px;border-collapse:collapse}
-                .as-table th{padding:10px 12px;background:#f8fafc;color:#64748b;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:2}
-                .as-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9}
-                .as-table tbody tr{transition:background .15s}
-                .as-table tbody tr:hover{background:#f8fafc!important}
                 .progress-container{height:20px;background:#e2e8f0;border-radius:10px;overflow:hidden;position:relative;min-width:200px}
                 .progress-bar{height:100%;border-radius:10px;transition:width .6s ease}
                 .progress-bar.verde{background:linear-gradient(90deg,#22c55e,#16a34a)}
@@ -34,59 +29,64 @@ App.registerModule('asesoria', {
                 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
             </style>
 
-            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1e40af 100%);border-radius:12px;padding:14px 20px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,.3)">
-                <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 70%);border-radius:50%"></div>
-                <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
-                    <div>
-                        <h2 style="margin:0;font-size:18px;font-weight:800;color:white;letter-spacing:-.5px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Asesoria</h2>
-                        <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,.7)">Seguimiento de solicitudes</p>
-                    </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
-                        <button onclick="App.modules.asesoria.exportarExcel()" style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Excel</button>
-                        <button onclick="App.modules.asesoria.exportarPDF()" style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> PDF</button>
-                        ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showEstadosModal()" style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25);border-radius:10px;color:white;font-size:13px;font-weight:600;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Estados</button>` : ''}
-                        ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showCrearModal()" style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,.3)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nueva Solicitud</button>` : ''}
-                    </div>
-                </div>
-            </div>
-
-            <div id="asResumen" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;margin-bottom:20px"></div>
-
-            <div style="background:white;border-radius:14px;padding:20px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:20px">
-                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
-                    <div style="flex:2;min-width:200px">
-                        <label class="form-label">Buscar</label>
-                        <input type="text" id="asBusqueda" placeholder="Codigo, remitente, detalle..." oninput="App.modules.asesoria.aplicarFiltros()" class="form-control">
-                    </div>
-                    <div style="flex:1;min-width:140px">
-                        <label class="form-label">Estado</label>
-                        <select id="asEstado" onchange="App.modules.asesoria.aplicarFiltros()" class="form-control">
-                            <option value="">Todos</option>
-                        </select>
-                    </div>
-                    <div style="flex:1;min-width:140px">
-                        <label class="form-label">Plazo</label>
-                        <select id="asPlazo" onchange="App.modules.asesoria.aplicarFiltros()" class="form-control">
-                            <option value="todos">Todos</option>
-                            <option value="vencido">Vencidos</option>
-                            <option value="por_vencer">Por vencer</option>
-                            <option value="en_plazo">En plazo</option>
-                        </select>
+            <div class="m-page">
+                <div class="m-hero">
+                    <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(59,130,246,.2) 0%,transparent 70%);border-radius:50%"></div>
+                    <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-4px;margin-right:8px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Asesoria</h2>
+                            <p>Seguimiento de solicitudes</p>
+                        </div>
+                        <div class="m-hero-btns">
+                            <button onclick="App.modules.asesoria.exportarExcel()" class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.15)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Excel</button>
+                            <button onclick="App.modules.asesoria.exportarPDF()" class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.15)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> PDF</button>
+                            ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showEstadosModal()" class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.15)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Estados</button>` : ''}
+                            ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showCrearModal()" class="btn btn-primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nueva Solicitud</button>` : ''}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div style="background:white;border-radius:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden">
-                <div style="overflow:auto;max-height:60vh">
-                    <table class="as-table">
-                        <thead><tr>
-                            <th>Codigo</th><th>Remitente</th><th>Detalle</th><th>Llegada</th><th>Plazo</th>
-                            <th>Progreso (dias habiles)</th><th>Estado</th><th>Acciones</th>
-                        </tr></thead>
-                        <tbody id="asTabla">
-                            <tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8">Cargando...</td></tr>
-                        </tbody>
-                    </table>
+                <div id="asResumen" class="m-stats"></div>
+
+                <div class="m-card" style="margin-bottom:20px">
+                    <div class="m-card-body">
+                        <div class="m-filters" style="align-items:end">
+                            <div style="flex:2;min-width:200px">
+                                <label class="form-label">Buscar</label>
+                                <input type="text" id="asBusqueda" placeholder="Codigo, remitente, detalle..." oninput="App.modules.asesoria.aplicarFiltros()" class="form-control">
+                            </div>
+                            <div style="flex:1;min-width:140px">
+                                <label class="form-label">Estado</label>
+                                <select id="asEstado" onchange="App.modules.asesoria.aplicarFiltros()" class="form-control">
+                                    <option value="">Todos</option>
+                                </select>
+                            </div>
+                            <div style="flex:1;min-width:140px">
+                                <label class="form-label">Plazo</label>
+                                <select id="asPlazo" onchange="App.modules.asesoria.aplicarFiltros()" class="form-control">
+                                    <option value="todos">Todos</option>
+                                    <option value="vencido">Vencidos</option>
+                                    <option value="por_vencer">Por vencer</option>
+                                    <option value="en_plazo">En plazo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="m-card">
+                    <div class="m-table-wrap" style="max-height:60vh;overflow:auto">
+                        <table>
+                            <thead><tr>
+                                <th>Codigo</th><th>Remitente</th><th>Detalle</th><th>Llegada</th><th>Plazo</th>
+                                <th>Progreso (dias habiles)</th><th>Estado</th><th>Acciones</th>
+                            </tr></thead>
+                            <tbody id="asTabla">
+                                <tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="m-cards-mobile" id="asCardsMobile"></div>
                 </div>
             </div>
         `;
@@ -151,31 +151,37 @@ App.registerModule('asesoria', {
         const s = this.stats;
         const cerrados = s.cerrados_por_estado || {};
         const estadoKeys = Object.keys(cerrados);
-        const colores = ['#22c55e', '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899'];
+        const statClasses = ['stat-info', 'stat-green', 'stat-purple', 'stat-amber', 'stat-red'];
 
         let cardsHtml = `
-            <div class="as-card stat-card"><div class="stat-value" style="color:#0f172a">${s.total || 0}</div><div class="stat-label">Total</div></div>
-            <div class="as-card stat-card"><div class="stat-value" style="color:#3b82f6">${s.abiertas || 0}</div><div class="stat-label">Abiertas</div></div>
+            <div class="m-stat-card stat-info"><div class="m-stat-value">${s.total || 0}</div><div class="m-stat-label">Total</div></div>
+            <div class="m-stat-card stat-blue"><div class="m-stat-value">${s.abiertas || 0}</div><div class="m-stat-label">Abiertas</div></div>
         `;
 
         estadoKeys.forEach((nombre, i) => {
-            const color = colores[i % colores.length];
+            const cls = statClasses[i % statClasses.length];
             const label = nombre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            cardsHtml += `<div class="as-card stat-card"><div class="stat-value" style="color:${color}">${cerrados[nombre] || 0}</div><div class="stat-label">${label}</div></div>`;
+            cardsHtml += `<div class="m-stat-card ${cls}"><div class="m-stat-value">${cerrados[nombre] || 0}</div><div class="m-stat-label">${label}</div></div>`;
         });
 
-        cardsHtml += `<div class="as-card stat-card"><div class="stat-value" style="color:#dc2626">${s.vencidas || 0}</div><div class="stat-label">Vencidas</div></div>`;
+        cardsHtml += `<div class="m-stat-card stat-red"><div class="m-stat-value">${s.vencidas || 0}</div><div class="m-stat-label">Vencidas</div></div>`;
 
         el.innerHTML = cardsHtml;
     },
 
     renderTabla() {
         const tbody = document.getElementById('asTabla');
+        const cardsMobile = document.getElementById('asCardsMobile');
         if (!this.datos.length) {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8">Sin resultados</td></tr>';
+            if (cardsMobile) cardsMobile.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8">Sin resultados</div>';
             return;
         }
-        tbody.innerHTML = this.datos.map(d => {
+
+        let tableHtml = '';
+        let cardsHtml = '';
+
+        this.datos.forEach(d => {
             const esCerrado = d.es_cerrado === true;
             const diasTranscurridos = d.dias_transcurridos || 0;
             const proximoVencer = !esCerrado && diasTranscurridos >= 8;
@@ -199,7 +205,18 @@ App.registerModule('asesoria', {
                     </div>`;
             }
 
-            return `<tr style="${esCerrado ? 'opacity:.6' : ''}">
+            const badgeClass = esCerrado ? 'badge-success' : 'badge-info';
+            const estadoLabel = d.estado_actual;
+
+            const accionesHtml = `
+                <div style="display:flex;gap:4px;flex-wrap:wrap">
+                    <button onclick="App.modules.asesoria.verHistorial(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Ver historial"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showEditarModal(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Editar" style="color:#d97706;border-color:#f59e0b"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+                    ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.eliminar(${d.id}, '${escapeHtml(d.codigo_identificacion)}')" class="btn btn-sm btn-outline icon-btn" title="Eliminar" style="color:#dc2626;border-color:#fca5a5"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+                    ${!esCerrado && Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id}, '${d.estado_actual}')" class="btn btn-sm btn-primary icon-btn" title="Cambiar estado"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>` : ''}
+                </div>`;
+
+            tableHtml += `<tr style="${esCerrado ? 'opacity:.6' : ''}">
                 <td style="font-weight:600;color:#3b82f6">${escapeHtml(d.codigo_identificacion)}</td>
                 <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.remitente)}">${escapeHtml(d.remitente)}</td>
                 <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(d.detalle_solicitud)}">${escapeHtml(d.detalle_solicitud)}</td>
@@ -207,19 +224,34 @@ App.registerModule('asesoria', {
                 <td>${this.fmtDate(d.plazo_final)}</td>
                 <td>${progresoHtml}</td>
                 <td>
-                    <span class="badge ${esCerrado ? 'badge-success' : 'badge-info'}">${d.estado_actual}</span>
+                    <span class="badge ${badgeClass}">${estadoLabel}</span>
                     ${proximoVencer ? `<span class="warning-badge" title="Proximo a vencer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>` : ''}
                 </td>
-                <td>
-                    <div style="display:flex;gap:4px;flex-wrap:wrap">
-                        <button onclick="App.modules.asesoria.verHistorial(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Ver historial"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                        ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showEditarModal(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Editar" style="color:#d97706;border-color:#f59e0b"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
-                        ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.eliminar(${d.id}, '${escapeHtml(d.codigo_identificacion)}')" class="btn btn-sm btn-outline icon-btn" title="Eliminar" style="color:#dc2626;border-color:#fca5a5"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
-                        ${!esCerrado && Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id}, '${d.estado_actual}')" class="btn btn-sm btn-primary icon-btn" title="Cambiar estado"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>` : ''}
-                    </div>
-                </td>
+                <td>${accionesHtml}</td>
             </tr>`;
-        }).join('');
+
+            cardsHtml += `<div class="m-mobile-card" style="${esCerrado ? 'opacity:.6' : ''}">
+                <div class="m-mobile-card-header">
+                    <div>
+                        <div class="m-mobile-card-title">${escapeHtml(d.codigo_identificacion)}</div>
+                        <div class="m-mobile-card-subtitle">${escapeHtml(d.remitente)}</div>
+                    </div>
+                    <span class="badge ${badgeClass}">${estadoLabel}</span>
+                </div>
+                <div class="m-mobile-card-detail">${escapeHtml(d.detalle_solicitud)}</div>
+                <div style="margin-bottom:8px">${progresoHtml}</div>
+                <div class="m-mobile-card-footer">
+                    <div class="m-mobile-card-meta">
+                        Llegada: ${this.fmtDate(d.fecha_llegada)} | Plazo: ${this.fmtDate(d.plazo_final)}
+                        ${proximoVencer ? ' <span style="color:#f59e0b;font-weight:600">Proximo a vencer</span>' : ''}
+                    </div>
+                    ${accionesHtml}
+                </div>
+            </div>`;
+        });
+
+        tbody.innerHTML = tableHtml;
+        if (cardsMobile) cardsMobile.innerHTML = cardsHtml;
     },
 
     async verHistorial(id) {
