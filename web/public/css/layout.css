@@ -32,14 +32,32 @@
     overflow: hidden;
 }
 .sidebar.collapsed .sidebar-title,
-.sidebar.collapsed .nav-item span,
+.sidebar.collapsed .nav-item > span:last-child,
 .sidebar.collapsed .nav-section span,
 .sidebar.collapsed .nav-section .toggle-icon,
 .sidebar.collapsed .nav-section::after,
 .sidebar.collapsed .nav-badge,
-.sidebar.collapsed .sidebar-nav,
 .sidebar.collapsed > div:last-child {
     display: none;
+}
+.sidebar.collapsed .sidebar-nav {
+    padding: var(--space-2) 0;
+    overflow: hidden;
+}
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+    margin: 1px var(--space-1);
+}
+.sidebar.collapsed .nav-section {
+    justify-content: center;
+    padding: var(--space-3) 0;
+}
+.sidebar.collapsed .nav-section-group {
+    max-height: none !important;
+}
+.sidebar.collapsed .nav-section-group.collapsed {
+    max-height: 0 !important;
 }
 .sidebar.collapsed .sidebar-header {
     padding: var(--space-4) var(--space-2);
