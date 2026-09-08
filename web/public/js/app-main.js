@@ -313,13 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const user = Auth.getUser();
     if (user) {
-        document.getElementById('userName').textContent = user.nombre || user.email || 'Usuario';
-        document.getElementById('userAvatar').textContent = (user.nombre || 'U').charAt(0).toUpperCase();
-        const roleBadge = document.getElementById('userRole');
-        if (roleBadge) {
-            roleBadge.textContent = user.rol === 'admin' ? 'Admin' : 'Visita';
-            roleBadge.className = `role-badge role-${user.rol}`;
-        }
+        document.getElementById('userName')?.remove();
     }
 
     const now = new Date();
