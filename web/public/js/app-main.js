@@ -31,27 +31,54 @@ const Auth = {
     }
 };
 
-function apiFetch(path, options = {}) {
+async function apiFetch(path, options = {}, retries = 2) {
     const token = Auth.getToken();
     const headers = { ...options.headers };
     if (token) headers['Authorization'] = `Bearer ${token}`;
     if (options.body && typeof options.body === 'string' && !headers['Content-Type']) {
         headers['Content-Type'] = 'application/json';
     }
-    return fetch(`${API_BASE}${path}`, { ...options, headers }).then(res => {
-        if (res.status === 401) {
-            const container = document.getElementById('alertContainer');
-            if (container) {
-                const alert = document.createElement('div');
-                alert.className = 'alert alert-warning';
-                alert.innerHTML = '<strong>Sesion expirada</strong><br>Tu sesion ha caducado. Seras redirigido al inicio de sesion...';
-                container.appendChild(alert);
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+
+        try {
+            const res = await fetch(`${API_BASE}${path}`, { ...options, headers, signal: controller.signal });
+            clearTimeout(timeout);
+
+            if (res.status === 401) {
+                const container = document.getElementById('alertContainer');
+                if (container) {
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-warning';
+                    alert.innerHTML = '<strong>Sesion expirada</strong><br>Tu sesion ha caducado. Seras redirigido al inicio de sesion...';
+                    container.appendChild(alert);
+                }
+                setTimeout(() => Auth.logout(), 2000);
+                throw new Error('Sesion expirada, inicie sesion novamente');
             }
-            setTimeout(() => Auth.logout(), 2000);
-            return Promise.reject(new Error('Sesion expirada, inicie sesion novamente'));
+
+            if (res.status === 503 && attempt < retries) {
+                console.warn(`[API] 503 en ${path}, reintentando (${attempt + 1}/${retries})...`);
+                await new Promise(r => setTimeout(r, 5000));
+                continue;
+            }
+
+            return res;
+        } catch (e) {
+            clearTimeout(timeout);
+            if (e.name === 'AbortError' && attempt < retries) {
+                console.warn(`[API] Timeout en ${path}, reintentando (${attempt + 1}/${retries})...`);
+                await new Promise(r => setTimeout(r, 3000));
+                continue;
+            }
+            if (e.name === 'AbortError') {
+                throw new Error('El servidor tardo demasiado en responder. Intenta nuevamente.');
+            }
+            throw e;
         }
-        return res;
-    });
+    }
 }
 
 const App = {
@@ -74,7 +101,11 @@ const App = {
             document.getElementById('mainContent').appendChild(page);
         }
         page.classList.add('active');
-        page.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b">Cargando...</div>';
+        page.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b" id="loadingMsg">Cargando...</div>';
+        const loadingTimer = setTimeout(() => {
+            const lm = document.getElementById('loadingMsg');
+            if (lm && lm.parentElement) lm.innerHTML = '<div style="text-align:center;padding:40px"><div style="margin-bottom:12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-linecap="round"/></svg></div><div style="color:#64748b;font-size:13px">El servidor esta iniciando, por favor espera...</div><div style="color:#94a3b8;font-size:11px;margin-top:4px">Render free tier puede tardar hasta 60 seg en despertar</div></div><style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>';
+        }, 5000);
 
         const navItem = document.querySelector(`.nav-item[data-page="${name}"]`);
         if (navItem) navItem.classList.add('active');
@@ -84,6 +115,7 @@ const App = {
             try { await this.modules[name].render(); }
             catch (e) { page.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`; console.error(e); }
         }
+        clearTimeout(loadingTimer);
     },
 
     showModal(html, options = {}) {
@@ -183,13 +215,17 @@ function toggleSection(section) {
     const sectionEl = group?.previousElementSibling;
     if (group) {
         group.classList.toggle('collapsed');
-        if (sectionEl) sectionEl.classList.toggle('collapsed');
+        if (sectionEl) {
+            sectionEl.classList.toggle('collapsed');
+            const isExpanded = !sectionEl.classList.contains('collapsed');
+            sectionEl.setAttribute('aria-expanded', isExpanded);
+        }
     }
 }
 
 function navI(page, label, icon) {
-    return `<div class="nav-item" data-page="${page}" onclick="App.loadModule('${page}')">
-        <span class="nav-icon">${icon}</span><span>${label}</span></div>`;
+    return `<div class="nav-item" data-page="${page}" onclick="App.loadModule('${page}')" onkeydown="if(event.key==='Enter')App.loadModule('${page}')" role="button" tabindex="0" aria-label="${label}" data-tooltip="${label}">
+        <span class="nav-icon" aria-hidden="true">${icon}</span><span>${label}</span></div>`;
 }
 
 const SVG = {
@@ -205,29 +241,66 @@ const SVG = {
 
 function renderSidebar() {
     const nav = document.getElementById('sidebarNav');
+    const user = Auth.getUser();
     let html = '';
 
+    // User profile section
+    if (user) {
+        const initial = (user.nombre || 'U').charAt(0).toUpperCase();
+        const roleClass = user.rol === 'admin' ? 'sidebar-role-admin' : 'sidebar-role-visita';
+        html += `
+            <div class="sidebar-profile" data-tooltip="${user.nombre || user.email}">
+                <div class="sidebar-profile-avatar ${roleClass}">${initial}</div>
+                <div class="sidebar-profile-info">
+                    <div class="sidebar-profile-name">${escapeHtml(user.nombre || user.email)}</div>
+                    <div class="sidebar-profile-role">${user.rol === 'admin' ? 'Administrador' : 'Visita'}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Quick actions
+    if (Auth.isAdmin()) {
+        html += `
+            <div class="sidebar-quick-actions">
+                <button class="sidebar-quick-btn" onclick="App.modules.asesoria?.showCrearModal()" data-tooltip="Nueva solicitud" aria-label="Nueva solicitud">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Nueva</span>
+                </button>
+            </div>
+        `;
+    }
+
+    // Divider
+    html += '<div class="sidebar-divider"></div>';
+
+    // Navigation sections
     if (hasSection('asesoria')) {
-        html += `<div class="nav-section" onclick="toggleSection('asesoria')"><span>ASESORIA</span><span class="toggle-icon">▼</span></div>`;
-        html += `<div class="nav-section-group" id="section-asesoria">`;
+        html += `<div class="nav-section" onclick="toggleSection('asesoria')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-asesoria"><span>ASESORIA</span><span class="toggle-icon" aria-hidden="true">▼</span></div>`;
+        html += `<div class="nav-section-group" id="section-asesoria" role="group">`;
         html += navI('asesoria', 'Solicitudes', SVG.list);
         html += navI('asesoria-calendar', 'Calendario', SVG.calendar);
         html += navI('informes', 'Informes', SVG.chart);
         html += `</div>`;
     }
 
+    // Divider
+    html += '<div class="sidebar-divider"></div>';
+
     if (Auth.isAdmin() && hasSection('config')) {
-        html += `<div class="nav-section" onclick="toggleSection('config')"><span>CONFIGURACION</span><span class="toggle-icon">▼</span></div>`;
-        html += `<div class="nav-section-group" id="section-config">`;
+        html += `<div class="nav-section" onclick="toggleSection('config')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-config"><span>CONFIGURACION</span><span class="toggle-icon" aria-hidden="true">▼</span></div>`;
+        html += `<div class="nav-section-group" id="section-config" role="group">`;
         html += navI('usuarios', 'Usuarios', SVG.users);
         html += `</div>`;
     }
 
     nav.innerHTML = html;
 
+    // Footer with logout and version
     const logoutHtml = `
-        <div style="margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,.1)">
-            <div id="sidebarLogout" onclick="Auth.logout()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;transition:background .15s;color:rgba(255,255,255,.7);font-size:13px;font-weight:500" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='transparent'">
+        <div class="sidebar-footer">
+            <div class="sidebar-version">v1.0.0</div>
+            <div id="sidebarLogout" onclick="Auth.logout()" class="sidebar-logout" role="button" tabindex="0" aria-label="Cerrar sesion" data-tooltip="Cerrar sesion">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 <span>Cerrar sesion</span>
             </div>

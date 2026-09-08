@@ -110,6 +110,8 @@ App.registerModule('asesoria-calendar', {
             });
         } catch (e) {
             console.error('Error calendar:', e);
+            const grid = document.getElementById('calGrid');
+            if (grid) grid.innerHTML = `<div style="grid-column:span 7;text-align:center;padding:40px;color:#dc2626">Error al cargar datos: ${e.message}</div>`;
         }
     },
 

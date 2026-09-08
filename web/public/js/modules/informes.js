@@ -80,6 +80,8 @@ App.registerModule('informes', {
             this.renderTabla();
         } catch (e) {
             console.error('Error cargando informes:', e);
+            const el = document.getElementById('infTablaBody');
+            if (el) el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:#dc2626">Error al cargar datos: ${e.message}</td></tr>`;
         }
     },
 
