@@ -8,14 +8,21 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 router.post('/api/auth/login', async (req, res) => {
-    const { rol, password } = req.body;
+    const { email, rol, password } = req.body;
 
-    if (!rol || !password) {
-        return res.status(400).json({ error: 'Rol y password son requeridos' });
+    if ((!email && !rol) || !password) {
+        return res.status(400).json({ error: 'Correo o usuario y contrasena son requeridos' });
     }
 
     try {
-        const result = await query('SELECT * FROM usuarios WHERE rol = $1 AND activo = TRUE', [rol]);
+        let result;
+        if (email && String(email).includes('@')) {
+            result = await query('SELECT * FROM usuarios WHERE LOWER(email) = LOWER($1) AND activo = TRUE', [String(email).trim()]);
+        } else {
+            // Retrocompatible: inicio de sesion por rol (usuarios antiguos)
+            result = await query('SELECT * FROM usuarios WHERE rol = $1 AND activo = TRUE ORDER BY id ASC LIMIT 1', [rol]);
+        }
+
         if (result.rows.length === 0) {
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
@@ -23,7 +30,7 @@ router.post('/api/auth/login', async (req, res) => {
         const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
-            return res.status(401).json({ error: 'Contrasena incorrecta' });
+            return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
         const token = jwt.sign(
@@ -78,8 +85,8 @@ router.put('/api/auth/password', authenticate, requireAdmin, async (req, res) =>
         return res.status(400).json({ error: 'user_id y new_password son requeridos' });
     }
 
-    if (new_password.length < 4) {
-        return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    if (String(new_password).length < 8) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
 
     try {

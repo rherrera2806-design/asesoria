@@ -3,29 +3,30 @@ const router = express.Router();
 const asesoria = require('../services/asesoria');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
-router.get('/api/asesorias', async (req, res, next) => {
+// Lectura: requiere sesion (antes eran publicos y exponian todos los procesos)
+router.get('/api/asesorias', authenticate, async (req, res, next) => {
     try {
         const { filtro, estado, plazo, fecha_desde, fecha_hasta } = req.query;
         res.json(await asesoria.getAsesorias({ filtro, estado, plazo, fechaDesde: fecha_desde, fechaHasta: fecha_hasta }));
     } catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/stats', async (req, res, next) => {
+router.get('/api/asesorias/stats', authenticate, async (req, res, next) => {
     try { res.json(await asesoria.getStats()); }
     catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/informes', async (req, res, next) => {
+router.get('/api/asesorias/informes', authenticate, async (req, res, next) => {
     try { res.json(await asesoria.getInformesMensual()); }
     catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/calendario/:fecha', async (req, res, next) => {
+router.get('/api/asesorias/calendario/:fecha', authenticate, async (req, res, next) => {
     try { res.json(await asesoria.getPorFecha(req.params.fecha)); }
     catch (e) { next(e); }
 });
 
-router.get('/api/estados', async (req, res, next) => {
+router.get('/api/estados', authenticate, async (req, res, next) => {
     try { res.json(await asesoria.getEstados()); }
     catch (e) { next(e); }
 });
@@ -72,7 +73,7 @@ router.put('/api/estados/:id/orden', authenticate, requireAdmin, async (req, res
     } catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/:id', async (req, res, next) => {
+router.get('/api/asesorias/:id', authenticate, async (req, res, next) => {
     try {
         const a = await asesoria.getAsesoriaById(Number(req.params.id));
         if (!a) return res.status(404).json({ error: 'No encontrada' });
@@ -80,7 +81,7 @@ router.get('/api/asesorias/:id', async (req, res, next) => {
     } catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/:id/historial', async (req, res, next) => {
+router.get('/api/asesorias/:id/historial', authenticate, async (req, res, next) => {
     try { res.json(await asesoria.getHistorial(Number(req.params.id))); }
     catch (e) { next(e); }
 });
@@ -91,13 +92,15 @@ router.post('/api/asesorias', authenticate, requireAdmin, async (req, res, next)
         return res.status(400).json({ error: 'Codigo, remitente y detalle son requeridos' });
     }
     try {
-        const email = req.headers['x-user-email'] || 'sistema';
+        const email = req.user.email;
         res.status(201).json(await asesoria.crearAsesoria(req.body, email));
     } catch (e) {
         if (e.message.includes('duplicate') || e.code === '23505') {
             return res.status(400).json({ error: 'Ya existe una asesoria con ese codigo' });
         }
-        res.status(500).json({ error: e.message });
+        if (e.expose) return res.status(e.status || 400).json({ error: e.message });
+        console.error('[ASESORIA] Error al crear:', e.message);
+        res.status(500).json({ error: 'Error al crear la asesoria' });
     }
 });
 
@@ -105,7 +108,14 @@ router.put('/api/asesorias/:id', authenticate, requireAdmin, async (req, res, ne
     try {
         const email = req.user.email;
         res.json(await asesoria.actualizarAsesoria(Number(req.params.id), req.body, email));
-    } catch (e) { res.status(400).json({ error: e.message }); }
+    } catch (e) {
+        if (e.message.includes('duplicate') || e.code === '23505') {
+            return res.status(400).json({ error: 'Ya existe una asesoria con ese codigo' });
+        }
+        if (e.expose) return res.status(e.status || 400).json({ error: e.message });
+        console.error('[ASESORIA] Error al actualizar:', e.message);
+        res.status(500).json({ error: 'Error al actualizar la asesoria' });
+    }
 });
 
 router.put('/api/asesorias/:id/estado', authenticate, requireAdmin, async (req, res, next) => {
@@ -114,7 +124,11 @@ router.put('/api/asesorias/:id/estado', authenticate, requireAdmin, async (req, 
     try {
         const email = req.user.email;
         res.json(await asesoria.cambiarEstado(Number(req.params.id), estado, email, observacion));
-    } catch (e) { res.status(400).json({ error: e.message }); }
+    } catch (e) {
+        if (e.expose) return res.status(e.status || 400).json({ error: e.message });
+        console.error('[ASESORIA] Error al cambiar estado:', e.message);
+        res.status(500).json({ error: 'Error al cambiar el estado' });
+    }
 });
 
 router.delete('/api/asesorias/:id', authenticate, requireAdmin, async (req, res, next) => {

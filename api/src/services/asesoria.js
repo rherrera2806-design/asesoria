@@ -1,4 +1,4 @@
-const { query } = require('../config/database');
+const { query, withTransaction, appError } = require('../config/database');
 const { calcularPlazoFinal, calcularDiasHabilesTranscurridos, calcularDiasHabilesRestantes, getProgresoEstado } = require('../config/dbSchema');
 
 const getEstados = async () => {
@@ -25,22 +25,26 @@ const reordenarEstado = async (id, nuevaPosicion) => {
 };
 
 const editarEstado = async (id, nombre, cierraProceso) => {
-    const actual = await query('SELECT nombre FROM estados_config WHERE id = $1 AND activo = TRUE', [id]);
-    if (actual.rows.length === 0) throw new Error('Estado no encontrado');
-    const nombreViejo = actual.rows[0].nombre;
     const nombreNuevo = nombre.trim().toLowerCase();
 
-    const result = await query(
-        'UPDATE estados_config SET nombre = $1, cierra_proceso = $2 WHERE id = $3 AND activo = TRUE RETURNING *',
-        [nombreNuevo, cierraProceso, id]
-    );
+    // Transaccion: si algo falla, no quedan estados renombrados a medias
+    return withTransaction(async (q) => {
+        const actual = await q('SELECT nombre FROM estados_config WHERE id = $1 AND activo = TRUE', [id]);
+        if (actual.rows.length === 0) throw appError('Estado no encontrado', 404);
+        const nombreViejo = actual.rows[0].nombre;
 
-    if (nombreViejo !== nombreNuevo) {
-        await query('UPDATE asesorias SET estado_actual = $1 WHERE estado_actual = $2', [nombreNuevo, nombreViejo]);
-        await query('UPDATE asesorias_estados SET estado = $1 WHERE estado = $2', [nombreNuevo, nombreViejo]);
-    }
+        const result = await q(
+            'UPDATE estados_config SET nombre = $1, cierra_proceso = $2 WHERE id = $3 AND activo = TRUE RETURNING *',
+            [nombreNuevo, cierraProceso, id]
+        );
 
-    return result.rows[0];
+        if (nombreViejo !== nombreNuevo) {
+            await q('UPDATE asesorias SET estado_actual = $1 WHERE estado_actual = $2', [nombreNuevo, nombreViejo]);
+            await q('UPDATE asesorias_estados SET estado = $1 WHERE estado = $2', [nombreNuevo, nombreViejo]);
+        }
+
+        return result.rows[0];
+    });
 };
 
 const esEstadoCierre = async (nombreEstado) => {
@@ -88,15 +92,25 @@ const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde =
     const cierreResult = await query(`SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE`);
     const estadosCierre = cierreResult.rows.map(r => r.nombre);
 
+    // Una sola consulta para todas las cerradas (antes: una query por cada proceso cerrado)
+    const cerradas = asesorias.filter(a => estadosCierre.includes(a.estado_actual));
+    let cierresPorClave = {};
+    if (cerradas.length > 0) {
+        const histResult = await query(
+            `SELECT asesoria_id, estado, MIN(fecha_hora) AS fecha_hora
+             FROM asesorias_estados
+             WHERE asesoria_id = ANY($1) AND estado = ANY($2)
+             GROUP BY asesoria_id, estado`,
+            [cerradas.map(a => a.id), cerradas.map(a => a.estado_actual)]
+        );
+        histResult.rows.forEach(r => { cierresPorClave[`${r.asesoria_id}|${r.estado}`] = r.fecha_hora; });
+    }
+
     for (const a of asesorias) {
         a.es_cerrado = estadosCierre.includes(a.estado_actual);
         if (a.es_cerrado) {
-            const histResult = await query(
-                `SELECT fecha_hora FROM asesorias_estados WHERE asesoria_id = $1 AND estado = $2 ORDER BY fecha_hora ASC LIMIT 1`,
-                [a.id, a.estado_actual]
-            );
-            if (histResult.rows.length > 0) {
-                const fechaCierre = histResult.rows[0].fecha_hora;
+            const fechaCierre = cierresPorClave[`${a.id}|${a.estado_actual}`];
+            if (fechaCierre) {
                 a.dias_habiles_total = calcularDiasHabilesTranscurridos(a.fecha_llegada);
                 const fechaCierreDate = new Date(fechaCierre);
                 const fechaLlegada = new Date(a.fecha_llegada);
@@ -148,26 +162,29 @@ const crearAsesoria = async (body, usuarioEmail) => {
     const fechaLlegada = body.fecha_llegada || new Date().toISOString().split('T')[0];
     const plazoFinal = calcularPlazoFinal(fechaLlegada);
 
-    const result = await query(`
-        INSERT INTO asesorias (codigo_identificacion, remitente, detalle_solicitud, observacion, fecha_llegada, plazo_final, estado_actual, creado_por)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
-    `, [
-        body.codigo_identificacion,
-        body.remitente,
-        body.detalle_solicitud,
-        body.observacion || '',
-        fechaLlegada,
-        plazoFinal,
-        'en proceso',
-        usuarioEmail
-    ]);
+    // Transaccion: registro + historial se crean juntos o no se crea ninguno
+    return withTransaction(async (q) => {
+        const result = await q(`
+            INSERT INTO asesorias (codigo_identificacion, remitente, detalle_solicitud, observacion, fecha_llegada, plazo_final, estado_actual, creado_por)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
+        `, [
+            body.codigo_identificacion,
+            body.remitente,
+            body.detalle_solicitud,
+            body.observacion || '',
+            fechaLlegada,
+            plazoFinal,
+            'en proceso',
+            usuarioEmail
+        ]);
 
-    await query(`
-        INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
-        VALUES ($1, $2, $3, $4)
-    `, [result.rows[0].id, 'en proceso', usuarioEmail, 'asesoria creada']);
+        await q(`
+            INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
+            VALUES ($1, $2, $3, $4)
+        `, [result.rows[0].id, 'en proceso', usuarioEmail, 'asesoria creada']);
 
-    return result.rows[0];
+        return result.rows[0];
+    });
 };
 
 const actualizarAsesoria = async (id, body, usuarioEmail) => {
@@ -185,37 +202,54 @@ const actualizarAsesoria = async (id, body, usuarioEmail) => {
         fields.push(`plazo_final = $${idx++}`); values.push(nuevoPlazo);
     }
 
-    if (fields.length === 0) throw new Error('Sin campos para actualizar');
+    if (fields.length === 0) throw appError('Sin campos para actualizar', 400);
 
-    fields.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(id);
+    return withTransaction(async (q) => {
+        const existe = await q('SELECT id FROM asesorias WHERE id = $1 FOR UPDATE', [id]);
+        if (existe.rows.length === 0) throw appError('Asesoria no encontrada', 404);
 
-    await query(`UPDATE asesorias SET ${fields.join(', ')} WHERE id = $${idx}`, values);
+        fields.push(`updated_at = CURRENT_TIMESTAMP`);
+        values.push(id);
 
-    await query(`
-        INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
-        VALUES ($1, $2, $3, $4)
-    `, [id, 'editado', usuarioEmail, body.observacion || 'datos actualizados']);
+        await q(`UPDATE asesorias SET ${fields.join(', ')} WHERE id = $${idx}`, values);
 
-    return await getAsesoriaById(id);
+        await q(`
+            INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
+            VALUES ($1, $2, $3, $4)
+        `, [id, 'editado', usuarioEmail, body.observacion || 'datos actualizados']);
+
+        const r = await q('SELECT * FROM asesorias WHERE id = $1', [id]);
+        return r.rows[0];
+    });
 };
 
 const cambiarEstado = async (id, nuevoEstado, usuarioEmail, observacion) => {
-    const asesoria = await getAsesoriaById(id);
-    if (!asesoria) throw new Error('Asesoria no encontrada');
+    return withTransaction(async (q) => {
+        const asesoria = await q('SELECT id FROM asesorias WHERE id = $1 FOR UPDATE', [id]);
+        if (asesoria.rows.length === 0) throw appError('Asesoria no encontrada', 404);
 
-    await query('UPDATE asesorias SET estado_actual = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [nuevoEstado, id]);
+        // El estado debe existir en la configuracion (evita estados inventados que rompen los ciclos de cierre)
+        const estadoValido = await q('SELECT id FROM estados_config WHERE nombre = $1 AND activo = TRUE', [nuevoEstado]);
+        if (estadoValido.rows.length === 0) throw appError('El estado indicado no existe en la configuracion', 400);
 
-    await query(`
-        INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
-        VALUES ($1, $2, $3, $4)
-    `, [id, nuevoEstado, usuarioEmail, observacion || `estado cambiado a: ${nuevoEstado}`]);
+        await q('UPDATE asesorias SET estado_actual = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [nuevoEstado, id]);
 
-    return await getAsesoriaById(id);
+        await q(`
+            INSERT INTO asesorias_estados (asesoria_id, estado, usuario_email, observacion)
+            VALUES ($1, $2, $3, $4)
+        `, [id, nuevoEstado, usuarioEmail, observacion || `estado cambiado a: ${nuevoEstado}`]);
+
+        const r = await q('SELECT * FROM asesorias WHERE id = $1', [id]);
+        return r.rows[0];
+    });
 };
 
 const eliminarAsesoria = async (id) => {
-    await query('DELETE FROM asesorias WHERE id = $1', [id]);
+    return withTransaction(async (q) => {
+        const existe = await q('SELECT id FROM asesorias WHERE id = $1 FOR UPDATE', [id]);
+        if (existe.rows.length === 0) throw appError('Asesoria no encontrada', 404);
+        await q('DELETE FROM asesorias WHERE id = $1', [id]);
+    });
 };
 
 const getStats = async () => {
