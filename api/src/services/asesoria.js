@@ -1,18 +1,23 @@
 const { query, withTransaction, appError } = require('../config/database');
-const { calcularPlazoFinal, calcularDiasHabilesTranscurridos, calcularDiasHabilesRestantes, getProgresoEstado, diaUtilChileno } = require('../config/dbSchema');
+const { fechaTexto, calcularPlazoFinal, calcularDiasHabilesTranscurridos, calcularDiasHabilesRestantes, getProgresoEstado, diaUtilChileno } = require('../config/dbSchema');
 
-// Todas las lecturas de fecha usan to_char para entregar YYYY-MM-DD (igual que antes de migrar a DATE)
+// Fechas en YYYY-MM-DD sin importar si la columna es TEXT o DATE (migracion segura)
 const COLS = `
     a.id, a.codigo_identificacion, a.remitente, a.detalle_solicitud, a.observacion,
-    to_char(a.fecha_llegada, 'YYYY-MM-DD') AS fecha_llegada,
-    to_char(a.plazo_final, 'YYYY-MM-DD') AS plazo_final,
+    a.fecha_llegada, a.plazo_final,
     a.estado_actual, a.creado_por, a.created_at, a.updated_at`;
 
 const COLS_RETURNING = `
     id, codigo_identificacion, remitente, detalle_solicitud, observacion,
-    to_char(fecha_llegada, 'YYYY-MM-DD') AS fecha_llegada,
-    to_char(plazo_final, 'YYYY-MM-DD') AS plazo_final,
+    fecha_llegada, plazo_final,
     estado_actual, creado_por, created_at, updated_at`;
+
+const aFechas = (fila) => {
+    if (!fila) return fila;
+    if ('fecha_llegada' in fila) fila.fecha_llegada = fechaTexto(fila.fecha_llegada);
+    if ('plazo_final' in fila) fila.plazo_final = fechaTexto(fila.plazo_final);
+    return fila;
+};
 
 const getEstados = async () => {
     const result = await query('SELECT * FROM estados_config WHERE activo = TRUE ORDER BY orden ASC');
@@ -108,6 +113,7 @@ const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde =
     const result = await query(sql, params);
 
     const asesorias = result.rows.map(r => {
+        aFechas(r);
         const diasTranscurridos = calcularDiasHabilesTranscurridos(r.fecha_llegada);
         const diasRestantes = calcularDiasHabilesRestantes(r.plazo_final);
         const progresoEstado = getProgresoEstado(r.fecha_llegada, r.plazo_final);
@@ -187,7 +193,7 @@ const calcularDiasHabilesTranscurridosConTope = (fechaInicio, fechaFin) => {
 
 const getAsesoriaById = async (id) => {
     const result = await query(`SELECT ${COLS} FROM asesorias a WHERE a.id = $1`, [id]);
-    return result.rows[0];
+    return aFechas(result.rows[0]);
 };
 
 const getHistorial = async (asesoriaId) => {
@@ -223,7 +229,7 @@ const crearAsesoria = async (body, usuarioEmail) => {
             VALUES ($1, $2, $3, $4)
         `, [result.rows[0].id, 'en proceso', usuarioEmail, 'asesoria creada']);
 
-        return result.rows[0];
+        return aFechas(result.rows[0]);
     });
 };
 
@@ -259,7 +265,7 @@ const actualizarAsesoria = async (id, body, usuarioEmail) => {
         `, [id, 'editado', usuarioEmail, body.observacion || 'datos actualizados']);
 
         const r = await q(`SELECT ${COLS} FROM asesorias a WHERE a.id = $1`, [id]);
-        return r.rows[0];
+        return aFechas(r.rows[0]);
     });
 };
 
@@ -280,7 +286,7 @@ const cambiarEstado = async (id, nuevoEstado, usuarioEmail, observacion) => {
         `, [id, nuevoEstado, usuarioEmail, observacion || `estado cambiado a: ${nuevoEstado}`]);
 
         const r = await q(`SELECT ${COLS} FROM asesorias a WHERE a.id = $1`, [id]);
-        return r.rows[0];
+        return aFechas(r.rows[0]);
     });
 };
 
@@ -303,7 +309,7 @@ const getStats = async () => {
         return { total, abiertas: total, cerrados: 0, vencidas: 0, cerrados_por_estado: {} };
     }
 
-    const all = await query(`SELECT estado_actual, to_char(plazo_final, 'YYYY-MM-DD') AS plazo_final FROM asesorias`);
+    const all = await query(`SELECT estado_actual, plazo_final FROM asesorias`);
     let abiertas = 0, cerrados = 0, vencidas = 0;
     const porEstado = {};
     const hoy = new Date();
@@ -317,7 +323,7 @@ const getStats = async () => {
         } else {
             abiertas++;
             if (row.plazo_final) {
-                const [y, m, d] = row.plazo_final.split('-').map(Number);
+                const [y, m, d] = fechaTexto(row.plazo_final).split('-').map(Number);
                 const plazo = new Date(y, m - 1, d, 12, 0, 0);
                 if (plazo < hoy) vencidas++;
             }
@@ -333,6 +339,7 @@ const getPorFecha = async (fecha) => {
         [fecha]
     );
     return result.rows.map(r => {
+        aFechas(r);
         const diasTranscurridos = calcularDiasHabilesTranscurridos(r.fecha_llegada);
         const diasRestantes = calcularDiasHabilesRestantes(r.plazo_final);
         const progresoEstado = getProgresoEstado(r.fecha_llegada, r.plazo_final);
@@ -349,8 +356,7 @@ const getInformesMensual = async () => {
     const placeholders = estadosCierre.map((_, i) => `$${i + 1}`).join(',');
     const result = await query(`
         SELECT a.id, a.codigo_identificacion, a.remitente, a.detalle_solicitud,
-               to_char(a.fecha_llegada, 'YYYY-MM-DD') AS fecha_llegada,
-               to_char(a.plazo_final, 'YYYY-MM-DD') AS plazo_final,
+               a.fecha_llegada, a.plazo_final,
                a.estado_actual,
                ae.fecha_hora as fecha_cierre
         FROM asesorias a
@@ -365,6 +371,7 @@ const getInformesMensual = async () => {
 
     const meses = {};
     for (const a of result.rows) {
+        aFechas(a);
         const cierreDate = new Date(a.fecha_cierre);
         const diasHabiles = calcularDiasHabilesTranscurridosConTope(a.fecha_llegada, cierreDate);
         const mesKey = `${cierreDate.getFullYear()}-${String(cierreDate.getMonth() + 1).padStart(2, '0')}`;

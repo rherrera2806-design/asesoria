@@ -36,23 +36,28 @@ async function initDB() {
     )`);
 
     // Migracion: si las columnas de fecha quedaron como TEXT (esquema antiguo), se pasan a DATE.
-    // Se valida antes que todos los valores tengan formato YYYY-MM-DD para no romper el arranque.
-    const cols = await query(
-        `SELECT column_name, data_type FROM information_schema.columns
-         WHERE table_name = 'asesorias' AND column_name IN ('fecha_llegada', 'plazo_final')`
-    );
-    for (const col of cols.rows) {
-        if (col.data_type !== 'text') continue;
-        const invalidas = await query(
-            `SELECT COUNT(*) AS c FROM asesorias
-             WHERE ${col.column_name} IS NULL OR ${col.column_name} !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'`
+    // Nunca debe romper el arranque: si algo falla, se queda en TEXT y la app sigue funcionando
+    // (las lecturas normalizan el formato en JS, asi que funcionan con TEXT o con DATE).
+    try {
+        const cols = await query(
+            `SELECT column_name, data_type FROM information_schema.columns
+             WHERE table_name = 'asesorias' AND column_name IN ('fecha_llegada', 'plazo_final')`
         );
-        if (Number(invalidas.rows[0].c) > 0) {
-            console.error(`[ASESORIA] Columna ${col.column_name} tiene valores no validos: se mantiene como TEXT.`);
-            continue;
+        for (const col of cols.rows) {
+            if (col.data_type !== 'text') continue;
+            const invalidas = await query(
+                `SELECT COUNT(*) AS c FROM asesorias
+                 WHERE ${col.column_name} IS NULL OR ${col.column_name} !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'`
+            );
+            if (Number(invalidas.rows[0].c) > 0) {
+                console.error(`[ASESORIA] Columna ${col.column_name} tiene valores no validos: se mantiene como TEXT.`);
+                continue;
+            }
+            await query(`ALTER TABLE asesorias ALTER COLUMN ${col.column_name} TYPE DATE USING (${col.column_name}::date)`);
+            console.log(`[ASESORIA] Columna ${col.column_name} migrada a DATE`);
         }
-        await query(`ALTER TABLE asesorias ALTER COLUMN ${col.column_name} TYPE DATE USING (${col.column_name}::date)`);
-        console.log(`[ASESORIA] Columna ${col.column_name} migrada a DATE`);
+    } catch (e) {
+        console.error('[ASESORIA] No se pudo migrar las fechas a DATE (se mantiene TEXT):', e.message);
     }
 
     await query(`CREATE TABLE IF NOT EXISTS feriados_extras (
@@ -104,12 +109,11 @@ async function initDB() {
     if (closedNames.length > 0) {
         const placeholders = closedNames.map((_, i) => `$${i + 1}`).join(',');
         const openResult = await query(
-            `SELECT id, to_char(fecha_llegada, 'YYYY-MM-DD') AS fecha_llegada
-             FROM asesorias WHERE estado_actual NOT IN (${placeholders})`,
+            `SELECT id, fecha_llegada FROM asesorias WHERE estado_actual NOT IN (${placeholders})`,
             closedNames
         );
         for (const row of openResult.rows) {
-            const nuevoPlazo = calcularPlazoFinal(row.fecha_llegada);
+            const nuevoPlazo = calcularPlazoFinal(fechaTexto(row.fecha_llegada));
             await query('UPDATE asesorias SET plazo_final = $1 WHERE id = $2', [nuevoPlazo, row.id]);
         }
         if (openResult.rows.length > 0) {
@@ -144,8 +148,22 @@ async function initDB() {
     }
 }
 
+// Postgres entrega DATE como Date (medianoche local) y TEXT como 'YYYY-MM-DD'.
+// Normaliza cualquier caso a 'YYYY-MM-DD' usando el componente local (correcto en cualquier zona horaria).
+function fechaTexto(v) {
+    if (v === null || v === undefined || v === '') return v;
+    if (v instanceof Date) {
+        const y = v.getFullYear();
+        const m = String(v.getMonth() + 1).padStart(2, '0');
+        const d = String(v.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    const s = String(v);
+    return s.includes('T') ? s.slice(0, 10) : s;
+}
+
 function calcularPlazoFinal(fechaLlegada) {
-    const parts = String(fechaLlegada).slice(0, 10).split('-');
+    const parts = fechaTexto(fechaLlegada).split('-');
     const fecha = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
 
     // Dia util = de lunes a viernes y no feriado (ley chilena)
@@ -183,7 +201,7 @@ function diaUtilChileno(f) {
 }
 
 function calcularDiasHabilesTranscurridos(fechaLlegada) {
-    const parts = String(fechaLlegada).slice(0, 10).split('-');
+    const parts = fechaTexto(fechaLlegada).split('-');
     const inicio = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
     const hoy = new Date();
     hoy.setHours(12, 0, 0, 0);
@@ -197,7 +215,7 @@ function calcularDiasHabilesTranscurridos(fechaLlegada) {
 }
 
 function calcularDiasHabilesRestantes(plazoFinal) {
-    const parts = String(plazoFinal).slice(0, 10).split('-');
+    const parts = fechaTexto(plazoFinal).split('-');
     const fin = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
     const hoy = new Date();
     hoy.setHours(12, 0, 0, 0);
@@ -223,6 +241,7 @@ function getProgresoEstado(fechaLlegada, plazoFinal) {
 
 module.exports = {
     initDB,
+    fechaTexto,
     calcularPlazoFinal,
     calcularDiasHabilesTranscurridos,
     calcularDiasHabilesRestantes,
