@@ -1,4 +1,5 @@
 const { query } = require('./database');
+const { esFeriado, cargarExtras } = require('./feriados');
 
 async function initDB() {
     await query(`CREATE TABLE IF NOT EXISTS usuarios (
@@ -26,19 +27,39 @@ async function initDB() {
         remitente VARCHAR(200) NOT NULL,
         detalle_solicitud TEXT NOT NULL,
         observacion TEXT DEFAULT '',
-        fecha_llegada TEXT NOT NULL DEFAULT to_char(CURRENT_DATE, 'YYYY-MM-DD'),
-        plazo_final TEXT NOT NULL,
+        fecha_llegada DATE NOT NULL DEFAULT CURRENT_DATE,
+        plazo_final DATE NOT NULL,
         estado_actual VARCHAR(100) DEFAULT 'en proceso',
         creado_por VARCHAR(255) DEFAULT 'sistema',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    await query(`DO $$ BEGIN
-        ALTER TABLE asesorias ALTER COLUMN fecha_llegada TYPE TEXT USING to_char(fecha_llegada::date, 'YYYY-MM-DD');
-        ALTER TABLE asesorias ALTER COLUMN plazo_final TYPE TEXT USING to_char(plazo_final::date, 'YYYY-MM-DD');
-    EXCEPTION WHEN OTHERS THEN NULL;
-    END $$`);
+    // Migracion: si las columnas de fecha quedaron como TEXT (esquema antiguo), se pasan a DATE.
+    // Se valida antes que todos los valores tengan formato YYYY-MM-DD para no romper el arranque.
+    const cols = await query(
+        `SELECT column_name, data_type FROM information_schema.columns
+         WHERE table_name = 'asesorias' AND column_name IN ('fecha_llegada', 'plazo_final')`
+    );
+    for (const col of cols.rows) {
+        if (col.data_type !== 'text') continue;
+        const invalidas = await query(
+            `SELECT COUNT(*) AS c FROM asesorias
+             WHERE ${col.column_name} IS NULL OR ${col.column_name} !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'`
+        );
+        if (Number(invalidas.rows[0].c) > 0) {
+            console.error(`[ASESORIA] Columna ${col.column_name} tiene valores no validos: se mantiene como TEXT.`);
+            continue;
+        }
+        await query(`ALTER TABLE asesorias ALTER COLUMN ${col.column_name} TYPE DATE USING (${col.column_name}::date)`);
+        console.log(`[ASESORIA] Columna ${col.column_name} migrada a DATE`);
+    }
+
+    await query(`CREATE TABLE IF NOT EXISTS feriados_extras (
+        fecha TEXT PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
 
     await query(`CREATE TABLE IF NOT EXISTS asesorias_estados (
         id SERIAL PRIMARY KEY,
@@ -75,12 +96,16 @@ async function initDB() {
         console.log('[ASESORIA] Estados por defecto creados');
     }
 
+    // Feriados extras (elecciones, plebiscitos, etc.) deben estar cargados antes de recalcular plazos
+    await cargarExtras();
+
     const closedStates = await query('SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE');
     const closedNames = closedStates.rows.map(r => r.nombre);
     if (closedNames.length > 0) {
         const placeholders = closedNames.map((_, i) => `$${i + 1}`).join(',');
         const openResult = await query(
-            `SELECT id, fecha_llegada FROM asesorias WHERE estado_actual NOT IN (${placeholders})`,
+            `SELECT id, to_char(fecha_llegada, 'YYYY-MM-DD') AS fecha_llegada
+             FROM asesorias WHERE estado_actual NOT IN (${placeholders})`,
             closedNames
         );
         for (const row of openResult.rows) {
@@ -120,47 +145,59 @@ async function initDB() {
 }
 
 function calcularPlazoFinal(fechaLlegada) {
-    const parts = fechaLlegada.split('-');
+    const parts = String(fechaLlegada).slice(0, 10).split('-');
     const fecha = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+
+    // Dia util = de lunes a viernes y no feriado (ley chilena)
+    const esUtil = (f) => {
+        const d = f.getDay();
+        if (d === 0 || d === 6) return false;
+        const y = f.getFullYear();
+        const m = String(f.getMonth() + 1).padStart(2, '0');
+        const dd = String(f.getDate()).padStart(2, '0');
+        return !esFeriado(`${y}-${m}-${dd}`);
+    };
+
     let diasHabiles = 1;
-    const dia = fecha.getDay();
-    if (dia === 0 || dia === 6) {
-        while (fecha.getDay() === 0 || fecha.getDay() === 6) {
-            fecha.setDate(fecha.getDate() + 1);
-        }
+    while (!esUtil(fecha)) {
+        fecha.setDate(fecha.getDate() + 1);
     }
     while (diasHabiles < 10) {
         fecha.setDate(fecha.getDate() + 1);
-        const d = fecha.getDay();
-        if (d !== 0 && d !== 6) {
-            diasHabiles++;
-        }
+        if (esUtil(fecha)) diasHabiles++;
     }
+
     const y = fecha.getFullYear();
     const m = String(fecha.getMonth() + 1).padStart(2, '0');
     const d = String(fecha.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
 }
 
+function diaUtilChileno(f) {
+    const dia = f.getDay();
+    if (dia === 0 || dia === 6) return false;
+    const y = f.getFullYear();
+    const m = String(f.getMonth() + 1).padStart(2, '0');
+    const d = String(f.getDate()).padStart(2, '0');
+    return !esFeriado(`${y}-${m}-${d}`);
+}
+
 function calcularDiasHabilesTranscurridos(fechaLlegada) {
-    const parts = fechaLlegada.split('-');
+    const parts = String(fechaLlegada).slice(0, 10).split('-');
     const inicio = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
     const hoy = new Date();
     hoy.setHours(12, 0, 0, 0);
     let dias = 0;
     const current = new Date(inicio);
     while (current <= hoy) {
-        const dia = current.getDay();
-        if (dia !== 0 && dia !== 6) {
-            dias++;
-        }
+        if (diaUtilChileno(current)) dias++;
         current.setDate(current.getDate() + 1);
     }
     return dias;
 }
 
 function calcularDiasHabilesRestantes(plazoFinal) {
-    const parts = plazoFinal.split('-');
+    const parts = String(plazoFinal).slice(0, 10).split('-');
     const fin = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
     const hoy = new Date();
     hoy.setHours(12, 0, 0, 0);
@@ -169,10 +206,7 @@ function calcularDiasHabilesRestantes(plazoFinal) {
     const current = new Date(hoy);
     while (current < fin) {
         current.setDate(current.getDate() + 1);
-        const dia = current.getDay();
-        if (dia !== 0 && dia !== 6) {
-            dias++;
-        }
+        if (diaUtilChileno(current)) dias++;
     }
     return dias;
 }
@@ -192,5 +226,6 @@ module.exports = {
     calcularPlazoFinal,
     calcularDiasHabilesTranscurridos,
     calcularDiasHabilesRestantes,
+    diaUtilChileno,
     getProgresoEstado
 };

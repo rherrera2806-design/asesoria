@@ -1,5 +1,18 @@
 const { query, withTransaction, appError } = require('../config/database');
-const { calcularPlazoFinal, calcularDiasHabilesTranscurridos, calcularDiasHabilesRestantes, getProgresoEstado } = require('../config/dbSchema');
+const { calcularPlazoFinal, calcularDiasHabilesTranscurridos, calcularDiasHabilesRestantes, getProgresoEstado, diaUtilChileno } = require('../config/dbSchema');
+
+// Todas las lecturas de fecha usan to_char para entregar YYYY-MM-DD (igual que antes de migrar a DATE)
+const COLS = `
+    a.id, a.codigo_identificacion, a.remitente, a.detalle_solicitud, a.observacion,
+    to_char(a.fecha_llegada, 'YYYY-MM-DD') AS fecha_llegada,
+    to_char(a.plazo_final, 'YYYY-MM-DD') AS plazo_final,
+    a.estado_actual, a.creado_por, a.created_at, a.updated_at`;
+
+const COLS_RETURNING = `
+    id, codigo_identificacion, remitente, detalle_solicitud, observacion,
+    to_char(fecha_llegada, 'YYYY-MM-DD') AS fecha_llegada,
+    to_char(plazo_final, 'YYYY-MM-DD') AS plazo_final,
+    estado_actual, creado_por, created_at, updated_at`;
 
 const getEstados = async () => {
     const result = await query('SELECT * FROM estados_config WHERE activo = TRUE ORDER BY orden ASC');
@@ -52,30 +65,47 @@ const esEstadoCierre = async (nombreEstado) => {
     return result.rows.length > 0 ? result.rows[0].cierra_proceso : false;
 };
 
-const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde = '', fechaHasta = '' }) => {
-    let sqlSimple = `SELECT a.* FROM asesorias a WHERE 1=1`;
+const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde = '', fechaHasta = '', page = null, pageSize = null }) => {
+    const cierreResult = await query(`SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE`);
+    const estadosCierre = cierreResult.rows.map(r => r.nombre);
+
+    let whereSql = 'WHERE 1=1';
     const params = [];
 
     if (filtro) {
-        sqlSimple += ` AND (a.codigo_identificacion ILIKE $${params.length + 1} OR a.remitente ILIKE $${params.length + 1} OR a.detalle_solicitud ILIKE $${params.length + 1})`;
+        whereSql += ` AND (a.codigo_identificacion ILIKE $${params.length + 1} OR a.remitente ILIKE $${params.length + 1} OR a.detalle_solicitud ILIKE $${params.length + 1})`;
         params.push(`%${filtro}%`);
     }
-    if (estado) {
-        sqlSimple += ` AND a.estado_actual = $${params.length + 1}`;
+    if (estado === 'abiertas') {
+        if (estadosCierre.length > 0) {
+            const ph = estadosCierre.map((_, i) => `$${params.length + 1 + i}`).join(',');
+            whereSql += ` AND a.estado_actual NOT IN (${ph})`;
+            params.push(...estadosCierre);
+        }
+    } else if (estado) {
+        whereSql += ` AND a.estado_actual = $${params.length + 1}`;
         params.push(estado);
     }
     if (fechaDesde) {
-        sqlSimple += ` AND a.fecha_llegada >= $${params.length + 1}`;
+        whereSql += ` AND a.fecha_llegada >= $${params.length + 1}`;
         params.push(fechaDesde);
     }
     if (fechaHasta) {
-        sqlSimple += ` AND a.fecha_llegada <= $${params.length + 1}`;
+        whereSql += ` AND a.fecha_llegada <= $${params.length + 1}`;
         params.push(fechaHasta);
     }
 
-    sqlSimple += ' ORDER BY a.plazo_final ASC, a.fecha_llegada DESC';
+    // Paginacion opcional: con `page` se responde { items, total, page, pages }
+    const paginado = page !== null && page !== undefined && String(page) !== '';
+    const size = Math.min(Math.max(parseInt(pageSize, 10) || 50, 1), 500);
+    const num = Math.max(parseInt(page, 10) || 1, 1);
+    // El filtro por plazo/semáforo depende del calculo en JS, asi que se aplica despues de la query
+    const filtrarPorPlazo = !!plazo && plazo !== 'todos';
 
-    const result = await query(sqlSimple, params);
+    let sql = `SELECT ${COLS} FROM asesorias a ${whereSql} ORDER BY a.plazo_final ASC, a.fecha_llegada DESC`;
+    if (paginado && !filtrarPorPlazo) sql += ` LIMIT ${size} OFFSET ${(num - 1) * size}`;
+
+    const result = await query(sql, params);
 
     const asesorias = result.rows.map(r => {
         const diasTranscurridos = calcularDiasHabilesTranscurridos(r.fecha_llegada);
@@ -88,9 +118,6 @@ const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde =
             progreso_estado: progresoEstado
         };
     });
-
-    const cierreResult = await query(`SELECT nombre FROM estados_config WHERE cierra_proceso = TRUE`);
-    const estadosCierre = cierreResult.rows.map(r => r.nombre);
 
     // Una sola consulta para todas las cerradas (antes: una query por cada proceso cerrado)
     const cerradas = asesorias.filter(a => estadosCierre.includes(a.estado_actual));
@@ -125,7 +152,23 @@ const getAsesorias = async ({ filtro = '', estado = '', plazo = '', fechaDesde =
         }
     }
 
-    return asesorias;
+    // Filtro por plazo/semáforo (verde/amarillo/rojo) y paginacion en memoria
+    let lista = asesorias;
+    if (filtrarPorPlazo) {
+        lista = lista.filter(a => a.progreso_estado === plazo);
+    }
+
+    if (paginado) {
+        let total = lista.length;
+        if (!filtrarPorPlazo) {
+            const conteo = await query(`SELECT COUNT(*) AS c FROM asesorias a ${whereSql}`, params);
+            total = Number(conteo.rows[0].c);
+        }
+        const items = filtrarPorPlazo ? lista.slice((num - 1) * size, num * size) : lista;
+        return { items, total, page: num, pageSize: size, pages: Math.max(Math.ceil(total / size), 1) };
+    }
+
+    return lista;
 };
 
 const calcularDiasHabilesTranscurridosConTope = (fechaInicio, fechaFin) => {
@@ -136,17 +179,14 @@ const calcularDiasHabilesTranscurridosConTope = (fechaInicio, fechaFin) => {
     let dias = 0;
     const current = new Date(inicio);
     while (current <= fin) {
-        const dia = current.getDay();
-        if (dia !== 0 && dia !== 6) {
-            dias++;
-        }
+        if (diaUtilChileno(current)) dias++;
         current.setDate(current.getDate() + 1);
     }
     return dias;
 };
 
 const getAsesoriaById = async (id) => {
-    const result = await query('SELECT * FROM asesorias WHERE id = $1', [id]);
+    const result = await query(`SELECT ${COLS} FROM asesorias a WHERE a.id = $1`, [id]);
     return result.rows[0];
 };
 
@@ -166,7 +206,7 @@ const crearAsesoria = async (body, usuarioEmail) => {
     return withTransaction(async (q) => {
         const result = await q(`
             INSERT INTO asesorias (codigo_identificacion, remitente, detalle_solicitud, observacion, fecha_llegada, plazo_final, estado_actual, creado_por)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING ${COLS_RETURNING}
         `, [
             body.codigo_identificacion,
             body.remitente,
@@ -218,7 +258,7 @@ const actualizarAsesoria = async (id, body, usuarioEmail) => {
             VALUES ($1, $2, $3, $4)
         `, [id, 'editado', usuarioEmail, body.observacion || 'datos actualizados']);
 
-        const r = await q('SELECT * FROM asesorias WHERE id = $1', [id]);
+        const r = await q(`SELECT ${COLS} FROM asesorias a WHERE a.id = $1`, [id]);
         return r.rows[0];
     });
 };
@@ -239,7 +279,7 @@ const cambiarEstado = async (id, nuevoEstado, usuarioEmail, observacion) => {
             VALUES ($1, $2, $3, $4)
         `, [id, nuevoEstado, usuarioEmail, observacion || `estado cambiado a: ${nuevoEstado}`]);
 
-        const r = await q('SELECT * FROM asesorias WHERE id = $1', [id]);
+        const r = await q(`SELECT ${COLS} FROM asesorias a WHERE a.id = $1`, [id]);
         return r.rows[0];
     });
 };
@@ -263,7 +303,7 @@ const getStats = async () => {
         return { total, abiertas: total, cerrados: 0, vencidas: 0, cerrados_por_estado: {} };
     }
 
-    const all = await query(`SELECT estado_actual, plazo_final FROM asesorias`);
+    const all = await query(`SELECT estado_actual, to_char(plazo_final, 'YYYY-MM-DD') AS plazo_final FROM asesorias`);
     let abiertas = 0, cerrados = 0, vencidas = 0;
     const porEstado = {};
     const hoy = new Date();
@@ -289,7 +329,7 @@ const getStats = async () => {
 
 const getPorFecha = async (fecha) => {
     const result = await query(
-        'SELECT * FROM asesorias WHERE plazo_final = $1 ORDER BY fecha_llegada ASC',
+        `SELECT ${COLS} FROM asesorias a WHERE a.plazo_final = $1 ORDER BY a.fecha_llegada ASC`,
         [fecha]
     );
     return result.rows.map(r => {
@@ -309,7 +349,9 @@ const getInformesMensual = async () => {
     const placeholders = estadosCierre.map((_, i) => `$${i + 1}`).join(',');
     const result = await query(`
         SELECT a.id, a.codigo_identificacion, a.remitente, a.detalle_solicitud,
-               a.fecha_llegada, a.plazo_final, a.estado_actual,
+               to_char(a.fecha_llegada, 'YYYY-MM-DD') AS fecha_llegada,
+               to_char(a.plazo_final, 'YYYY-MM-DD') AS plazo_final,
+               a.estado_actual,
                ae.fecha_hora as fecha_cierre
         FROM asesorias a
         JOIN asesorias_estados ae ON ae.asesoria_id = a.id
