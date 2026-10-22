@@ -6,8 +6,12 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 // Lectura: requiere sesion (antes eran publicos y exponian todos los procesos)
 router.get('/api/asesorias', authenticate, async (req, res, next) => {
     try {
-        const { filtro, estado, plazo, fecha_desde, fecha_hasta } = req.query;
-        res.json(await asesoria.getAsesorias({ filtro, estado, plazo, fechaDesde: fecha_desde, fechaHasta: fecha_hasta }));
+        const { filtro, estado, plazo, fecha_desde, fecha_hasta, page, page_size } = req.query;
+        res.json(await asesoria.getAsesorias({
+            filtro, estado, plazo,
+            fechaDesde: fecha_desde, fechaHasta: fecha_hasta,
+            page, pageSize: page_size
+        }));
     } catch (e) { next(e); }
 });
 

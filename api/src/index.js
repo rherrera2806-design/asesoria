@@ -13,7 +13,21 @@ const app = express();
 // (necesario para que el rate limit por IP funcione).
 app.set('trust proxy', 1);
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+    // CSP estricta en las respuestas del API (JSON): cualquier intento de
+    // interpretar la respuesta como HTML/script queda bloqueado.
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'none'"],
+            baseUri: ["'self'"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+            formAction: ["'none'"],
+            imgSrc: ["'self'", 'data:'],
+            connectSrc: ["'self'"]
+        }
+    }
+}));
 const CORS_ORIGINS = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()).filter(Boolean)
     : true;
