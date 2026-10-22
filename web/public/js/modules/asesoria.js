@@ -141,7 +141,7 @@ App.registerModule('asesoria', {
         const val = sel.value;
         sel.innerHTML = '<option value="">Todos</option>' +
             '<option value="abiertas" ' + (val === 'abiertas' ? 'selected' : '') + '>Abiertas (sin cerradas)</option>' +
-            this.estados.map(e => `<option value="${e.nombre}" ${e.nombre === val ? 'selected' : ''}>${e.nombre}</option>`).join('');
+            this.estados.map(e => `<option value="${escapeHtml(e.nombre)}" ${e.nombre === val ? 'selected' : ''}>${escapeHtml(e.nombre)}</option>`).join('');
     },
 
     renderResumen() {
@@ -162,13 +162,19 @@ App.registerModule('asesoria', {
 
         estadoKeys.forEach((nombre, i) => {
             const cls = statClasses[i % statClasses.length];
-            const label = nombre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            cardsHtml += `<div class="m-stat-card ${cls} ${currentFilter === nombre ? 'stat-active' : ''}" onclick="App.modules.asesoria.filtrarPorStat('${escapeAttr(nombre)}')" style="cursor:pointer"><div class="m-stat-value">${cerrados[nombre] || 0}</div><div class="m-stat-label">${label}</div></div>`;
+            const label = escapeHtml(nombre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+            cardsHtml += `<div class="m-stat-card ${cls} ${currentFilter === nombre ? 'stat-active' : ''}" onclick="App.modules.asesoria.filtrarPorStatPorIndice(${i})" style="cursor:pointer"><div class="m-stat-value">${cerrados[nombre] || 0}</div><div class="m-stat-label">${label}</div></div>`;
         });
 
         cardsHtml += `<div class="m-stat-card stat-red ${currentPlazo === 'vencido' && currentFilter === '' ? 'stat-active' : ''}" onclick="App.modules.asesoria.filtrarPorStatVencidas()" style="cursor:pointer"><div class="m-stat-value">${s.vencidas || 0}</div><div class="m-stat-label">Vencidas</div></div>`;
 
         el.innerHTML = cardsHtml;
+    },
+
+    // El estado se resuelve por indice para no inyectar texto en el onclick
+    filtrarPorStatPorIndice(i) {
+        const keys = Object.keys((this.stats && this.stats.cerrados_por_estado) || {});
+        this.filtrarPorStat(keys[i] || '');
     },
 
     filtrarPorStat(estado) {
@@ -228,14 +234,14 @@ App.registerModule('asesoria', {
             }
 
             const badgeClass = esCerrado ? 'badge-success' : 'badge-info';
-            const estadoLabel = d.estado_actual;
+            const estadoLabel = escapeHtml(d.estado_actual || '');
 
             const accionesHtml = `
                 <div style="display:flex;gap:4px;flex-wrap:wrap">
                     <button onclick="App.modules.asesoria.verHistorial(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Ver historial"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
                     ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showEditarModal(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Editar" style="color:#d97706;border-color:#f59e0b"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
-                    ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.eliminar(${d.id}, '${escapeHtml(d.codigo_identificacion)}')" class="btn btn-sm btn-outline icon-btn" title="Eliminar" style="color:#dc2626;border-color:#fca5a5"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
-                    ${!esCerrado && Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id}, '${d.estado_actual}')" class="btn btn-sm btn-primary icon-btn" title="Cambiar estado"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>` : ''}
+                    ${Auth.isAdmin() ? `<button onclick="App.modules.asesoria.eliminar(${d.id})" class="btn btn-sm btn-outline icon-btn" title="Eliminar" style="color:#dc2626;border-color:#fca5a5"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+                    ${!esCerrado && Auth.isAdmin() ? `<button onclick="App.modules.asesoria.showCambiarEstadoModal(${d.id})" class="btn btn-sm btn-primary icon-btn" title="Cambiar estado"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51l.06.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>` : ''}
                 </div>`;
 
             tableHtml += `<tr style="${esCerrado ? 'opacity:.6' : ''}">
@@ -310,7 +316,7 @@ App.registerModule('asesoria', {
                         <div style="position:relative;padding:12px 0 12px 20px;border-left:2px solid ${i === 0 ? color : '#e2e8f0'}">
                             <div style="position:absolute;left:-7px;top:16px;width:12px;height:12px;border-radius:50%;background:${color};border:2px solid white"></div>
                             <div style="display:flex;justify-content:space-between;align-items:center">
-                                <span style="font-weight:600;font-size:13px;text-transform:uppercase;color:${color}">${h.estado}</span>
+                                <span style="font-weight:600;font-size:13px;text-transform:uppercase;color:${color}">${escapeHtml(h.estado)}</span>
                                 <span style="font-size:11px;color:#94a3b8">${new Date(h.fecha_hora).toLocaleString('es-CL')}</span>
                             </div>
                             <div style="font-size:12px;color:#64748b;margin-top:4px">${escapeHtml(h.observacion || '')}</div>
@@ -438,8 +444,9 @@ App.registerModule('asesoria', {
         }
     },
 
-    async eliminar(id, codigo) {
-        if (!await App.confirm(`Eliminar la asesoria "${codigo}"? Esta accion no se puede deshacer.`)) return;
+    async eliminar(id) {
+        const codigo = this.datos.find(d => d.id === id)?.codigo_identificacion || id;
+        if (!await App.confirm(`Eliminar la asesoria "${escapeHtml(codigo)}"? Esta accion no se puede deshacer.`)) return;
         try {
             const res = await apiFetch(`/api/asesorias/${id}`, { method: 'DELETE' });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
@@ -451,6 +458,10 @@ App.registerModule('asesoria', {
     },
 
     showCambiarEstadoModal(id, estadoActual) {
+        // El estado se resuelve desde los datos locales (evita inyectar texto en el onclick)
+        if (!estadoActual) {
+            estadoActual = this.datos.find(d => d.id === id)?.estado_actual || '';
+        }
         const disponibles = this.estados.filter(e => e.nombre !== estadoActual);
         if (disponibles.length === 0) {
             App.showAlert('No hay mas estados disponibles', 'warning');
@@ -460,7 +471,7 @@ App.registerModule('asesoria', {
             <div class="form-group">
                 <label class="form-label">Nuevo Estado</label>
                 <select id="asNuevoEstado" class="form-control">
-                    ${disponibles.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join('')}
+                    ${disponibles.map(e => `<option value="${escapeHtml(e.nombre)}">${escapeHtml(e.nombre)}</option>`).join('')}
                 </select>
             </div>
             <div class="form-group">
@@ -483,7 +494,7 @@ App.registerModule('asesoria', {
         try {
             const res = await apiFetch(`/api/asesorias/${id}/estado`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'x-user-email': 'admin@asesoria.cl' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado, observacion })
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
@@ -511,12 +522,12 @@ App.registerModule('asesoria', {
                             <div style="display:flex;align-items:center;gap:10px">
                                 <span style="color:#94a3b8;cursor:grab;font-size:16px" title="Arrastrar para reordenar">☰</span>
                                 <span style="font-weight:600;font-size:13px">${i + 1}.</span>
-                                <span class="estado-badge ${e.cierra_proceso ? 'estado-cierre' : ''}" id="estado-nombre-${e.id}">${e.nombre}</span>
+                                <span class="estado-badge ${e.cierra_proceso ? 'estado-cierre' : ''}" id="estado-nombre-${e.id}">${escapeHtml(e.nombre)}</span>
                                 ${e.cierra_proceso ? '<span style="font-size:10px;color:#065f46;background:#d1fae5;padding:2px 6px;border-radius:10px">CIERRA</span>' : ''}
                             </div>
                             <div style="display:flex;gap:4px">
-                                <button onclick="App.modules.asesoria.showEditarEstadoInline(${e.id}, '${escapeHtml(e.nombre)}', ${e.cierra_proceso})" style="background:none;border:none;color:#d97706;cursor:pointer;font-size:14px" title="Editar nombre">✏️</button>
-                                <button onclick="App.modules.asesoria.eliminarEstado(${e.id}, '${escapeHtml(e.nombre)}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px" title="Eliminar">✕</button>
+                                <button onclick="App.modules.asesoria.showEditarEstadoInline(${e.id})" style="background:none;border:none;color:#d97706;cursor:pointer;font-size:14px" title="Editar nombre">✏️</button>
+                                <button onclick="App.modules.asesoria.eliminarEstado(${e.id})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px" title="Eliminar">✕</button>
                             </div>
                         </div>
                     `).join('')}
@@ -526,7 +537,11 @@ App.registerModule('asesoria', {
         App.showModal(html, { title: 'Gestionar Estados' });
     },
 
-    showEditarEstadoInline(id, nombreActual, cierraActual) {
+    showEditarEstadoInline(id) {
+        // Se resuelve desde los datos locales (evita inyectar texto en el onclick)
+        const cfg = this.estados.find(e => e.id === id) || {};
+        const nombreActual = cfg.nombre || '';
+        const cierraActual = !!cfg.cierra_proceso;
         const item = document.getElementById(`estado-item-${id}`);
         if (!item) return;
         item.innerHTML = `
@@ -587,8 +602,9 @@ App.registerModule('asesoria', {
         }
     },
 
-    async eliminarEstado(id, nombre) {
-        if (!await App.confirm(`Eliminar estado "${nombre}"?`)) return;
+    async eliminarEstado(id) {
+        const nombre = this.estados.find(e => e.id === id)?.nombre || '';
+        if (!await App.confirm(`Eliminar estado "${escapeHtml(nombre)}"?`)) return;
         try {
             await apiFetch(`/api/estados/${id}`, { method: 'DELETE' });
             App.showAlert('Estado eliminado');
@@ -620,7 +636,8 @@ App.registerModule('asesoria', {
     },
 
     getDiasHabiles(d) {
-        const esCerrado = d.estado_actual === 'respondido y cerrado' || d.estado_actual === 'enviado y cerrado';
+        // Usa el flag que envia la API (antes tenia los estados de cierre hardcodeados)
+        const esCerrado = d.es_cerrado === true;
         if (esCerrado) return d.dias_habiles_total || d.dias_transcurridos || 0;
         return d.dias_transcurridos || 0;
     },
@@ -672,7 +689,7 @@ App.registerModule('asesoria', {
 
         const s = this.stats || {};
         doc.setFontSize(9);
-        doc.text(`Total: ${s.total || 0}  |  Abiertas: ${s.abiertas || 0}  |  Respondido y Cerrado: ${s.respondido_cerrado || 0}  |  Enviado y Cerrado: ${s.enviado_cerrado || 0}  |  Vencidas: ${s.vencidas || 0}`, 14, 29);
+        doc.text(`Total: ${s.total || 0}  |  Abiertas: ${s.abiertas || 0}  |  Cerrados: ${s.cerrados || 0}  |  Vencidas: ${s.vencidas || 0}`, 14, 29);
 
         const rows = this.datos.map(d => [
             d.codigo_identificacion,

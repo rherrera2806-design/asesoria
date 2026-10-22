@@ -1,0 +1,29 @@
+name: Keep Alive
+
+# Mantiene despierto el API en Render y activa la base de datos de Supabase.
+# Sin actividad por 7 dias, Supabase pausa el proyecto y el sistema deja de responder.
+on:
+  schedule:
+    - cron: '0 12 */4 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Despertar API + tocar base de datos
+        run: |
+          URL="https://asesoria-api.onrender.com/api/health"
+          for i in 1 2 3 4; do
+            code=$(curl -sS -o /tmp/health.json -w '%{http_code}' --max-time 90 "$URL" || echo "000")
+            echo "intento $i -> HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "OK: $(cat /tmp/health.json)"
+              exit 0
+            fi
+            sleep 45
+          done
+          echo "El API no responde:"
+          cat /tmp/health.json 2>/dev/null || true
+          exit 1

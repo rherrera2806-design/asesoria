@@ -1,4 +1,6 @@
-const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://asesoria-api.onrender.com';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:10000'
+    : 'https://asesoria-api.onrender.com';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -113,7 +115,7 @@ const App = {
 
         if (this.modules[name]) {
             try { await this.modules[name].render(); }
-            catch (e) { page.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`; console.error(e); }
+            catch (e) { page.innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(e.message)}</div>`; console.error(e); }
         }
         clearTimeout(loadingTimer);
     },
@@ -249,7 +251,7 @@ function renderSidebar() {
         const initial = (user.nombre || 'U').charAt(0).toUpperCase();
         const roleClass = user.rol === 'admin' ? 'sidebar-role-admin' : 'sidebar-role-visita';
         html += `
-            <div class="sidebar-profile" data-tooltip="${user.nombre || user.email}">
+            <div class="sidebar-profile" data-tooltip="${escapeHtml(user.nombre || user.email)}">
                 <div class="sidebar-profile-avatar ${roleClass}">${initial}</div>
                 <div class="sidebar-profile-info">
                     <div class="sidebar-profile-name">${escapeHtml(user.nombre || user.email)}</div>

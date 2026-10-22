@@ -76,7 +76,7 @@ App.registerModule('usuarios', {
                         <div class="user-name">${escapeHtml(u.nombre || u.email)}</div>
                         <div class="user-email">${escapeHtml(u.email)}</div>
                     </div>
-                    <span class="user-role-badge" style="background:${u.rol === 'admin' ? 'rgba(59,130,246,.15);color:#3b82f6' : 'rgba(34,197,94,.15);color:#16a34a'}">${u.rol}</span>
+                    <span class="user-role-badge" style="background:${u.rol === 'admin' ? 'rgba(59,130,246,.15);color:#3b82f6' : 'rgba(34,197,94,.15);color:#16a34a'}">${escapeHtml(u.rol)}</span>
                 </div>
                 <div class="user-actions" style="display:flex;align-items:center;gap:6px">
                     <input type="password" class="pwd-input" id="pwd-${u.id}" placeholder="Nueva contrasena" autocomplete="new-password">
@@ -97,8 +97,8 @@ App.registerModule('usuarios', {
             return;
         }
 
-        if (newPwd.length < 4) {
-            App.showAlert('Minimo 4 caracteres', 'danger');
+        if (newPwd.length < 8) {
+            App.showAlert('Minimo 8 caracteres', 'danger');
             return;
         }
 

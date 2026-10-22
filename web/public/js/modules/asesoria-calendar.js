@@ -198,7 +198,7 @@ App.registerModule('asesoria-calendar', {
                             <div style="flex:1;min-width:0">
                                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
                                     <span style="font-weight:700;color:#3b82f6;font-size:13px">${escapeHtml(d.codigo_identificacion)}</span>
-                                    <span class="badge ${estadoClass}" style="font-size:10px">${d.estado_actual}</span>
+                                    <span class="badge ${estadoClass}" style="font-size:10px">${escapeHtml(d.estado_actual || '')}</span>
                                 </div>
                                 <div style="font-size:11px;color:#0f172a;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.detalle_solicitud)}</div>
                                 <div style="font-size:10px;color:#64748b;margin-top:2px">${escapeHtml(d.remitente)} | ${this.fmtDate(d.fecha_llegada)}</div>

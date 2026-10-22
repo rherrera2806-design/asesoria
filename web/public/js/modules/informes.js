@@ -147,7 +147,7 @@ App.registerModule('informes', {
 
         let html = `<button class="inf-mes-btn ${!this.mesSeleccionado ? 'active' : ''}" onclick="App.modules.informes.seleccionarMes(null)">Todos</button>`;
         this.datos.forEach(m => {
-            html += `<button class="inf-mes-btn ${this.mesSeleccionado === m.mes ? 'active' : ''}" onclick="App.modules.informes.seleccionarMes('${m.mes}')">${m.mes_label}</button>`;
+            html += `<button class="inf-mes-btn ${this.mesSeleccionado === m.mes ? 'active' : ''}" onclick="App.modules.informes.seleccionarMes('${escapeHtml(m.mes)}')">${escapeHtml(m.mes_label)}</button>`;
         });
         el.innerHTML = html;
     },
@@ -197,9 +197,9 @@ App.registerModule('informes', {
             </span>`;
 
             tableHtml += `<tr style="animation:fadeUp .3s ease">
-                <td style="font-weight:600;color:#3b82f6">${d.codigo}</td>
-                <td style="font-weight:500">${d.remitente}</td>
-                <td style="color:#64748b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.detalle}</td>
+                <td style="font-weight:600;color:#3b82f6">${escapeHtml(d.codigo)}</td>
+                <td style="font-weight:500">${escapeHtml(d.remitente)}</td>
+                <td style="color:#64748b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(d.detalle)}</td>
                 <td>${d.fecha_llegada}</td>
                 <td>${d.plazo_final}</td>
                 <td>${d.fecha_cierre}</td>
@@ -210,12 +210,12 @@ App.registerModule('informes', {
             cardsHtml += `<div class="m-mobile-card" style="animation:fadeUp .3s ease">
                 <div class="m-mobile-card-header">
                     <div>
-                        <div class="m-mobile-card-title">${d.codigo}</div>
-                        <div class="m-mobile-card-subtitle">${d.remitente}</div>
+                        <div class="m-mobile-card-title">${escapeHtml(d.codigo)}</div>
+                        <div class="m-mobile-card-subtitle">${escapeHtml(d.remitente)}</div>
                     </div>
                     ${estadoBadge}
                 </div>
-                <div class="m-mobile-card-detail">${d.detalle}</div>
+                <div class="m-mobile-card-detail">${escapeHtml(d.detalle)}</div>
                 <div class="m-mobile-card-footer">
                     <div class="m-mobile-card-meta">Llegada: ${d.fecha_llegada} | Plazo: ${d.plazo_final} | Cierre: ${d.fecha_cierre}</div>
                     ${diasBadge}
