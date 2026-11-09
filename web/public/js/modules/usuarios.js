@@ -31,9 +31,14 @@ App.registerModule('usuarios', {
 
             <div class="m-page">
                 <div class="m-hero">
-                    <div style="position:relative;z-index:1">
-                        <h2>Usuarios</h2>
-                        <p>Gestionar contrasenas del sistema</p>
+                    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                        <div>
+                            <h2>Usuarios</h2>
+                            <p>Gestionar contrasenas del sistema</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="App.modules.usuarios.nuevoUsuario()">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>Nuevo usuario
+                        </button>
                     </div>
                 </div>
 
@@ -88,6 +93,101 @@ App.registerModule('usuarios', {
                 </div>
             </div>
         `).join('');
+    },
+
+    // ── Crear usuario ──
+    nuevoUsuario() {
+        App.showModal(`
+            <style>
+                .nu-field{margin-bottom:14px}
+                .nu-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px}
+                .nu-field .hint{font-size:10.5px;color:var(--text-muted);margin-top:5px}
+                .nu-rol{display:flex;gap:8px}
+                .nu-rol label{display:flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--text);margin:0;transition:all .15s;flex:1}
+                .nu-rol label:hover{border-color:var(--info);background:color-mix(in srgb, var(--info) 6%, white)}
+                .nu-rol input{accent-color:var(--info);cursor:pointer}
+                .nu-rol label.on{border-color:var(--info);background:color-mix(in srgb, var(--info) 10%, white);box-shadow:0 0 0 3px color-mix(in srgb, var(--info) 15%, transparent)}
+            </style>
+
+            <div class="nu-field">
+                <label for="nuNombre">Nombre completo</label>
+                <input type="text" id="nuNombre" class="form-control" maxlength="100" placeholder="Ej: Juan Perez" autocomplete="off">
+            </div>
+
+            <div class="nu-field">
+                <label for="nuEmail">Correo</label>
+                <input type="email" id="nuEmail" class="form-control" maxlength="255" placeholder="usuario@ejemplo.cl" autocomplete="off">
+                <div class="hint">Se usara para iniciar sesion (no distingue mayusculas).</div>
+            </div>
+
+            <div class="nu-field">
+                <label>Rol</label>
+                <div class="nu-rol">
+                    <label id="nuRolVisita" class="on" onclick="App.modules.usuarios.setRolNuevo('visita')">
+                        <input type="radio" name="nuRol" value="visita" checked onchange="App.modules.usuarios.setRolNuevo('visita')"> Visita
+                    </label>
+                    <label id="nuRolAdmin" onclick="App.modules.usuarios.setRolNuevo('admin')">
+                        <input type="radio" name="nuRol" value="admin" onchange="App.modules.usuarios.setRolNuevo('admin')"> Administrador
+                    </label>
+                </div>
+                <div class="hint">Administrador = todos los permisos. Visita = se configura en "Permisos".</div>
+            </div>
+
+            <div class="nu-field">
+                <label for="nuPassword">Contrasena</label>
+                <input type="password" id="nuPassword" class="form-control" maxlength="100" placeholder="Minimo 8 caracteres" autocomplete="new-password">
+                <div class="hint">Se podra cambiar despues desde la lista de usuarios.</div>
+            </div>
+        `, { title: 'Nuevo usuario' });
+
+        const footer = document.querySelector('#modalOverlay .modal-footer');
+        if (footer) {
+            footer.innerHTML = `
+                <button class="btn btn-outline" onclick="App.hideModal()">Cancelar</button>
+                <button class="btn btn-primary" id="nuSaveBtn" onclick="App.modules.usuarios.crearUsuario()">Crear usuario</button>
+            `;
+        }
+        this._nuevoRol = 'visita';
+        setTimeout(() => { const i = document.getElementById('nuNombre'); if (i) i.focus(); }, 100);
+    },
+
+    setRolNuevo(rol) {
+        this._nuevoRol = rol;
+        const v = document.getElementById('nuRolVisita');
+        const a = document.getElementById('nuRolAdmin');
+        if (v) v.classList.toggle('on', rol === 'visita');
+        if (a) a.classList.toggle('on', rol === 'admin');
+    },
+
+    async crearUsuario() {
+        const nombre = (document.getElementById('nuNombre').value || '').trim();
+        const email = (document.getElementById('nuEmail').value || '').trim();
+        const password = document.getElementById('nuPassword').value || '';
+
+        if (!nombre) return App.showAlert('Ingrese el nombre', 'danger');
+        if (!email.includes('@')) return App.showAlert('Correo invalido', 'danger');
+        if (password.length < 8) return App.showAlert('La contrasena debe tener al menos 8 caracteres', 'danger');
+
+        const btn = document.getElementById('nuSaveBtn');
+        btn.disabled = true;
+        btn.textContent = 'Creando...';
+
+        try {
+            const res = await apiFetch('/api/auth/users', {
+                method: 'POST',
+                body: JSON.stringify({ nombre, email, password, rol: this._nuevoRol || 'visita' })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            App.hideModal();
+            App.showAlert(`Usuario "${data.user.nombre}" creado (${data.user.rol})`, 'success');
+            await this.cargarUsuarios();
+        } catch (e) {
+            App.showAlert(e.message, 'danger');
+            btn.disabled = false;
+            btn.textContent = 'Crear usuario';
+        }
     },
 
     // ── Permisos granulares (matriz modulo x accion) ──

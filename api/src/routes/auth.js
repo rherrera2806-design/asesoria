@@ -83,6 +83,41 @@ router.get('/api/auth/users', authenticate, requirePermiso('usuarios', 'ver'), a
     }
 });
 
+router.post('/api/auth/users', authenticate, requirePermiso('usuarios', 'editar'), async (req, res) => {
+    const { nombre, email, password, rol } = req.body;
+
+    if (!nombre || !String(nombre).trim()) {
+        return res.status(400).json({ error: 'El nombre es requerido' });
+    }
+
+    if (!email || !String(email).includes('@')) {
+        return res.status(400).json({ error: 'Correo invalido' });
+    }
+
+    if (!password || String(password).length < 8) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+    }
+
+    const rolFinal = rol === 'admin' ? 'admin' : 'visita';
+
+    try {
+        const hash = await bcrypt.hash(String(password), 10);
+        const result = await query(
+            'INSERT INTO usuarios (nombre, email, password, rol) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id, nombre, email, rol, activo',
+            [String(nombre).trim(), String(email).trim().toLowerCase(), hash, rolFinal]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(409).json({ error: 'Ya existe un usuario con ese correo' });
+        }
+
+        res.status(201).json({ ok: true, user: result.rows[0] });
+    } catch (e) {
+        console.error('[AUTH] Error crear usuario:', e.message);
+        res.status(500).json({ error: 'Error al crear usuario' });
+    }
+});
+
 router.put('/api/auth/password', authenticate, requirePermiso('usuarios', 'editar'), async (req, res) => {
     const { user_id, new_password } = req.body;
 
