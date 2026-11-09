@@ -19,8 +19,15 @@ const DEFAULTS = {
     },
     logo: '',                    // data URL (png/jpg/svg) o vacio para el icono por defecto
     app_nombre: 'Asesoria',
+    app_subtitulo: 'Seguimiento', // segunda linea del encabezado del sidebar
+    mostrar_nombre: true,        // muestra/oculta el nombre en el sidebar
+    mostrar_subtitulo: true,     // muestra/oculta el subtitulo en el sidebar
+    logo_tamano: 42,             // tamano del logo en el sidebar (px)
     favicon: ''                  // data URL opcional para el favicon
 };
+
+const LOGO_MIN = 24;
+const LOGO_MAX = 72;
 
 function sanitizarTema(body) {
     const out = JSON.parse(JSON.stringify(DEFAULTS));
@@ -62,6 +69,21 @@ function sanitizarTema(body) {
     if (typeof body.app_nombre === 'string' && body.app_nombre.trim()) {
         const n = body.app_nombre.trim().slice(0, 40);
         if (!/[<>]/.test(n)) out.app_nombre = n;
+    }
+
+    if (typeof body.app_subtitulo === 'string') {
+        const s = body.app_subtitulo.trim().slice(0, 30);
+        if (!/[<>]/.test(s)) out.app_subtitulo = s;
+    }
+
+    if (typeof body.mostrar_nombre === 'boolean') out.mostrar_nombre = body.mostrar_nombre;
+    if (typeof body.mostrar_subtitulo === 'boolean') out.mostrar_subtitulo = body.mostrar_subtitulo;
+
+    if (body.logo_tamano !== undefined && body.logo_tamano !== null && body.logo_tamano !== '') {
+        const n = Number(body.logo_tamano);
+        if (Number.isFinite(n)) {
+            out.logo_tamano = Math.min(LOGO_MAX, Math.max(LOGO_MIN, Math.round(n)));
+        }
     }
 
     return out;

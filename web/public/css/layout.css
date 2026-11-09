@@ -66,9 +66,9 @@
 }
 .sidebar.collapsed .sidebar-logo {
     margin: 0;
-    width: 32px;
-    height: 32px;
-    font-size: 0.75rem;
+    width: min(var(--sidebar-logo-size, 42px), 32px);
+    height: min(var(--sidebar-logo-size, 42px), 32px);
+    font-size: calc(min(var(--sidebar-logo-size, 42px), 32px) * 0.4);
 }
 .sidebar.collapsed #sidebarCollapseBtn {
     display: none;
@@ -102,11 +102,12 @@
     transform: scale(1.1);
 }
 .sidebar-logo {
-    width: 42px; height: 42px;
+    width: var(--sidebar-logo-size, 42px); height: var(--sidebar-logo-size, 42px);
+    flex-shrink: 0;
     background: linear-gradient(135deg, var(--accent), var(--accent-dark));
     border-radius: var(--radius-md);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; font-weight: 800; color: var(--primary);
+    font-size: calc(var(--sidebar-logo-size, 42px) * 0.4); font-weight: 800; color: var(--primary);
     box-shadow: 0 2px 12px rgba(245,158,11,0.35);
     animation: logoPulse 3s ease-in-out infinite;
 }
@@ -115,6 +116,7 @@
     50% { box-shadow: 0 2px 24px rgba(245,158,11,0.5); }
 }
 .sidebar-title { font-size: 0.9375rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+.sidebar-title .st-nombre { display: block; }
 .sidebar-title small {
     display: block; font-size: 0.5625rem; font-weight: 600;
     opacity: 0.4; letter-spacing: 0.12em; margin-top: 3px; text-transform: uppercase;

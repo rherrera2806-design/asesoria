@@ -62,6 +62,15 @@ App.registerModule('configuracion', {
                 .theme-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
                 .logo-thumb{width:64px;height:64px;border-radius:10px;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
                 .logo-thumb img{max-width:100%;max-height:100%;object-fit:contain}
+                .id-field{margin-bottom:16px}
+                .id-field:last-child{margin-bottom:0}
+                .id-field>label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px}
+                .id-field>label b{color:var(--info);font-variant-numeric:tabular-nums}
+                .id-switch{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12px;color:var(--text-secondary);cursor:pointer;text-transform:none;letter-spacing:0;font-weight:500}
+                .id-switch input{width:16px;height:16px;accent-color:var(--info);cursor:pointer}
+                .id-range{width:100%;accent-color:var(--info);cursor:pointer}
+                .id-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px}
+                .lp-side .lp-logo{transition:width .15s, height .15s}
                 @media(max-width:900px){ .theme-wrap{grid-template-columns:1fr} }
             </style>
 
@@ -94,9 +103,32 @@ App.registerModule('configuracion', {
                         </div>
 
                         <div class="theme-card">
-                            <div class="theme-card-h">Nombre de la aplicacion</div>
+                            <div class="theme-card-h">Marca y textos</div>
                             <div class="theme-card-b">
-                                <input type="text" id="tcNombre" class="form-control" maxlength="40" placeholder="Asesoria" oninput="App.modules.configuracion.cambioNombre()">
+                                <div class="id-field">
+                                    <label for="tcNombre">Nombre principal</label>
+                                    <input type="text" id="tcNombre" class="form-control" maxlength="40" placeholder="Asesoria" oninput="App.modules.configuracion.cambioTexto()">
+                                    <label class="id-switch">
+                                        <input type="checkbox" id="tcMostrarNombre" checked onchange="App.modules.configuracion.cambioTexto()">
+                                        Mostrar en el menu lateral
+                                    </label>
+                                </div>
+
+                                <div class="id-field">
+                                    <label for="tcSubtitulo">Subtitulo</label>
+                                    <input type="text" id="tcSubtitulo" class="form-control" maxlength="30" placeholder="Seguimiento" oninput="App.modules.configuracion.cambioTexto()">
+                                    <label class="id-switch">
+                                        <input type="checkbox" id="tcMostrarSub" checked onchange="App.modules.configuracion.cambioTexto()">
+                                        Mostrar debajo del nombre
+                                    </label>
+                                </div>
+
+                                <div class="id-field">
+                                    <label for="tcSize">Tamano del logo — <b id="tcSizeVal">42</b> px</label>
+                                    <input type="range" id="tcSize" class="id-range" min="24" max="72" step="2" value="42"
+                                        oninput="App.modules.configuracion.cambioTamano(this.value)">
+                                    <div class="id-scale"><span>24 px</span><span>72 px</span></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -108,7 +140,7 @@ App.registerModule('configuracion', {
                                 <div class="live-preview">
                                     <div class="lp-side" id="tcPvSide">
                                         <div class="lp-logo" id="tcPvLogo">A</div>
-                                        <div><b id="tcPvNombre" style="font-size:12px">Asesoria</b><br><small style="opacity:.6;font-size:9px">Seguimiento</small></div>
+                                        <div><b id="tcPvNombre" style="font-size:12px">Asesoria</b><br><small id="tcPvSub" style="opacity:.6;font-size:9px">Seguimiento</small></div>
                                     </div>
                                     <div class="lp-hero" id="tcPvHero">
                                         <b>Encabezado de pagina</b>
@@ -158,7 +190,7 @@ App.registerModule('configuracion', {
             if (!res.ok) throw new Error('No se pudo cargar la configuracion');
             this.cfg = await res.json();
         } catch (e) {
-            this.cfg = { colores: this.PRESETS[0].colores, logo: '', app_nombre: 'Asesoria' };
+            this.cfg = { colores: this.PRESETS[0].colores, logo: '', app_nombre: 'Asesoria', app_subtitulo: 'Seguimiento', mostrar_nombre: true, mostrar_subtitulo: true, logo_tamano: 42 };
             App.showAlert('Usando colores por defecto: ' + e.message, 'warning');
         }
         this.original = JSON.parse(JSON.stringify(this.cfg));
@@ -196,6 +228,17 @@ App.registerModule('configuracion', {
         `).join('');
 
         document.getElementById('tcNombre').value = this.cfg.app_nombre || '';
+        const sub = document.getElementById('tcSubtitulo');
+        if (sub) sub.value = this.cfg.app_subtitulo == null ? 'Seguimiento' : this.cfg.app_subtitulo;
+        const mn = document.getElementById('tcMostrarNombre');
+        if (mn) mn.checked = this.cfg.mostrar_nombre !== false;
+        const ms = document.getElementById('tcMostrarSub');
+        if (ms) ms.checked = this.cfg.mostrar_subtitulo !== false;
+        const size = document.getElementById('tcSize');
+        if (size) {
+            size.value = this.cfg.logo_tamano || 42;
+            document.getElementById('tcSizeVal').textContent = size.value;
+        }
         this.pintarLogo();
         this.preview();
     },
@@ -250,9 +293,22 @@ App.registerModule('configuracion', {
         });
     },
 
-    cambioNombre() {
+    cambioTexto() {
         this.cfg.app_nombre = document.getElementById('tcNombre').value.trim() || 'Asesoria';
-        this.preview();
+        const sub = document.getElementById('tcSubtitulo');
+        if (sub) this.cfg.app_subtitulo = sub.value.trim();
+        const mn = document.getElementById('tcMostrarNombre');
+        if (mn) this.cfg.mostrar_nombre = mn.checked;
+        const ms = document.getElementById('tcMostrarSub');
+        if (ms) this.cfg.mostrar_subtitulo = ms.checked;
+        this.aplicarEnVivo();
+    },
+
+    cambioTamano(v) {
+        this.cfg.logo_tamano = parseInt(v, 10) || 42;
+        const lbl = document.getElementById('tcSizeVal');
+        if (lbl) lbl.textContent = this.cfg.logo_tamano;
+        this.aplicarEnVivo();
     },
 
     // Aplica en vivo en la pagina real (sin guardar) para vista previa inmediata
@@ -263,13 +319,27 @@ App.registerModule('configuracion', {
 
     preview() {
         const nombre = this.cfg.app_nombre || 'Asesoria';
+        const sub = this.cfg.app_subtitulo == null ? 'Seguimiento' : this.cfg.app_subtitulo;
         const el = document.getElementById('tcPvNombre');
         if (!el) return;
+
         el.textContent = nombre;
+        el.style.display = this.cfg.mostrar_nombre === false ? 'none' : '';
+
+        const subEl = document.getElementById('tcPvSub');
+        if (subEl) {
+            subEl.textContent = sub;
+            subEl.style.display = (this.cfg.mostrar_subtitulo === false || !sub) ? 'none' : '';
+        }
+
         const logo = document.getElementById('tcPvLogo');
         logo.innerHTML = this.cfg.logo
             ? `<img src="${this.cfg.logo}" alt="">`
             : nombre.charAt(0).toUpperCase();
+        // Mismo tamano relativo que en el sidebar real
+        const px = Math.max(16, Math.min(44, Math.round((this.cfg.logo_tamano || 42) * 0.62)));
+        logo.style.width = px + 'px';
+        logo.style.height = px + 'px';
     },
 
     copiarHex(hex) {

@@ -88,6 +88,46 @@ const Theme = (() => {
         if (meta) meta.setAttribute('content', d.heroTo);
     }
 
+    // Escapa texto antes de inyectarlo al DOM
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // Encabezado del sidebar: nombre, subtitulo, visibilidad y tamano del logo
+    function aplicarMarca(cfg) {
+        const nombre = cfg.app_nombre || 'Asesoria';
+        const subtitulo = cfg.app_subtitulo == null ? 'Seguimiento' : cfg.app_subtitulo;
+        const mostrarNombre = cfg.mostrar_nombre !== false;
+        const mostrarSub = cfg.mostrar_subtitulo !== false;
+        const tam = Number(cfg.logo_tamano) || 42;
+
+        // Tamano del logo (sidebar y login, este un poco mayor)
+        setVar('--sidebar-logo-size', `${tam}px`);
+        setVar('--login-logo-size', `${Math.min(96, tam + 14)}px`);
+
+        // Textos del encabezado del sidebar
+        const titulo = document.querySelector('.sidebar-title');
+        if (titulo) {
+            const partes = [];
+            if (mostrarNombre) partes.push(`<span class="st-nombre">${esc(nombre)}</span>`);
+            if (mostrarSub && subtitulo) partes.push(`<small>${esc(subtitulo)}</small>`);
+            const html = partes.join('');
+            if (titulo.innerHTML !== html) titulo.innerHTML = html;
+        }
+
+        // Titulo del login: sigue al nombre de la aplicacion
+        const h1 = document.querySelector('.login-header h1');
+        if (h1 && h1.textContent !== nombre) h1.textContent = nombre;
+
+        // Titulo de la pagina
+        const esLogin = !!document.querySelector('.login-card');
+        if (esLogin) {
+            if (nombre !== 'Asesoria') document.title = `${nombre} - Iniciar Sesion`;
+        } else {
+            document.title = (mostrarSub && subtitulo) ? `${nombre} - ${subtitulo}` : nombre;
+        }
+    }
+
     function aplicarLogo(cfg) {
         // Logo del sidebar / login
         const targets = document.querySelectorAll('.sidebar-logo, .login-logo');
@@ -115,13 +155,6 @@ const Theme = (() => {
             }
             link.href = cfg.favicon;
         }
-
-        // Titulo de la pagina
-        if (cfg.app_nombre && cfg.app_nombre !== 'Asesoria') {
-            const sufijo = document.title.includes('Iniciar Sesion') ? ' - Iniciar Sesion'
-                : (document.title.includes('Seguimiento') ? ' - Seguimiento' : '');
-            document.title = cfg.app_nombre + sufijo;
-        }
     }
 
     function aplicar(cfg) {
@@ -129,6 +162,7 @@ const Theme = (() => {
         this.cfg = cfg;
         try { localStorage.setItem('app_theme', JSON.stringify(cfg)); } catch (e) { /* cuota */ }
         if (cfg.colores) aplicarColores(cfg.colores);
+        aplicarMarca(cfg);
         aplicarLogo(cfg);
     }
 

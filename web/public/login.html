@@ -55,14 +55,14 @@
         }
 
         .login-logo {
-            width: 56px;
-            height: 56px;
+            width: var(--login-logo-size, 56px);
+            height: var(--login-logo-size, 56px);
             background: linear-gradient(135deg, var(--accent), #fbbf24);
             border-radius: 16px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: calc(var(--login-logo-size, 56px) * 0.43);
             margin-bottom: 16px;
             box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
         }
