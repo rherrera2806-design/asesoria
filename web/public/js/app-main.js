@@ -18,6 +18,42 @@ const Auth = {
     isAdmin() { const u = this.getUser(); return u && u.rol === 'admin'; },
     isVisitor() { const u = this.getUser(); return u && u.rol === 'visita'; },
 
+    // Permisos granulares: { modulo: [acciones] }. Admin => todo (null en servidor).
+    getPermisos() { const u = this.getUser(); return u ? (u.permisos ?? null) : undefined; },
+
+    // ¿Puede el usuario realizar 'accion' en 'modulo'?
+    // admin => siempre true; sin permisos cargados => false (se refrescan al cargar la app).
+    can(modulo, accion) {
+        const u = this.getUser();
+        if (!u) return false;
+        if (u.rol === 'admin') return true;
+        const p = u.permisos;
+        if (!p || typeof p !== 'object') return false;
+        return Array.isArray(p[modulo]) && p[modulo].includes(accion);
+    },
+
+    // Ve el modulo completo (al menos 'ver')
+    canSee(modulo) { return this.can(modulo, 'ver'); },
+
+    // Actualiza los permisos desde el servidor (el admin puede cambiarlos en caliente)
+    async refresh() {
+        if (!this.isLoggedIn()) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${this.getToken()}` }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.user) {
+                localStorage.setItem('auth_user', JSON.stringify(data.user));
+            }
+        } catch (e) { /* sin conexion: se mantienen los permisos actuales */ }
+    },
+
+    setUsuario(user) {
+        localStorage.setItem('auth_user', JSON.stringify(user));
+    },
+
     requireAuth() {
         if (!this.isLoggedIn()) {
             window.location.href = 'login.html';
@@ -91,6 +127,11 @@ const App = {
 
     async loadModule(name) {
         if (this.currentPage === name) return;
+        // Guarda de permisos: no se puede abrir un modulo no permitido
+        if (!Auth.canSee(name)) {
+            App.showAlert('No tienes permiso para ver este modulo', 'warning');
+            return;
+        }
         document.querySelectorAll('#mainContent .page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         this.closeSidebar();
@@ -204,13 +245,18 @@ const App = {
 
 const SIDEBAR_SECTIONS = {
     asesoria: ['asesoria', 'asesoria-calendar', 'informes'],
-    config: ['usuarios']
+    lobby: ['lobby'],
+    config: ['usuarios', 'configuracion']
 };
 
 function getUser() { return Auth.getUser(); }
 
-function hasSection(section) { return SIDEBAR_SECTIONS[section] !== undefined; }
-function canSeeItem(item, section) { return true; }
+function hasSection(section) {
+    if (SIDEBAR_SECTIONS[section] === undefined) return false;
+    // La seccion solo se muestra si el usuario ve al menos un modulo de ella
+    return SIDEBAR_SECTIONS[section].some(m => Auth.canSee(m));
+}
+function canSeeItem(item) { return Auth.canSee(item); }
 
 function toggleSection(section) {
     const group = document.getElementById(`section-${section}`);
@@ -238,7 +284,9 @@ const SVG = {
     edit: '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
     eye: '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
-    users: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+    users: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    door: '<svg viewBox="0 0 24 24"><path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"/></svg>',
+    palette: '<svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>'
 };
 
 function renderSidebar() {
@@ -262,7 +310,7 @@ function renderSidebar() {
     }
 
     // Quick actions
-    if (Auth.isAdmin()) {
+    if (Auth.can('asesoria', 'editar')) {
         html += `
             <div class="sidebar-quick-actions">
                 <button class="sidebar-quick-btn" onclick="App.modules.asesoria?.showCrearModal()" data-tooltip="Nueva solicitud" aria-label="Nueva solicitud">
@@ -276,23 +324,34 @@ function renderSidebar() {
     // Divider
     html += '<div class="sidebar-divider"></div>';
 
-    // Navigation sections
+    // Navigation sections (cada item se filtra por permiso granular)
     if (hasSection('asesoria')) {
         html += `<div class="nav-section" onclick="toggleSection('asesoria')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-asesoria"><span>ASESORIA</span><span class="toggle-icon" aria-hidden="true">▼</span></div>`;
         html += `<div class="nav-section-group" id="section-asesoria" role="group">`;
-        html += navI('asesoria', 'Solicitudes', SVG.list);
-        html += navI('asesoria-calendar', 'Calendario', SVG.calendar);
-        html += navI('informes', 'Informes', SVG.chart);
+        if (canSeeItem('asesoria')) html += navI('asesoria', 'Solicitudes', SVG.list);
+        if (canSeeItem('asesoria-calendar')) html += navI('asesoria-calendar', 'Calendario', SVG.calendar);
+        if (canSeeItem('informes')) html += navI('informes', 'Informes', SVG.chart);
         html += `</div>`;
     }
 
     // Divider
     html += '<div class="sidebar-divider"></div>';
 
-    if (Auth.isAdmin() && hasSection('config')) {
+    if (hasSection('lobby')) {
+        html += `<div class="nav-section" onclick="toggleSection('lobby')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-lobby"><span>LOBBY</span><span class="toggle-icon" aria-hidden="true">▼</span></div>`;
+        html += `<div class="nav-section-group" id="section-lobby" role="group">`;
+        if (canSeeItem('lobby')) html += navI('lobby', 'Sala de Reuniones', SVG.door);
+        html += `</div>`;
+    }
+
+    // Divider
+    html += '<div class="sidebar-divider"></div>';
+
+    if (hasSection('config')) {
         html += `<div class="nav-section" onclick="toggleSection('config')" role="button" tabindex="0" aria-expanded="true" aria-controls="section-config"><span>CONFIGURACION</span><span class="toggle-icon" aria-hidden="true">▼</span></div>`;
         html += `<div class="nav-section-group" id="section-config" role="group">`;
-        html += navI('usuarios', 'Usuarios', SVG.users);
+        if (canSeeItem('usuarios')) html += navI('usuarios', 'Usuarios', SVG.users);
+        if (canSeeItem('configuracion')) html += navI('configuracion', 'Apariencia', SVG.palette);
         html += `</div>`;
     }
 
@@ -310,7 +369,7 @@ function renderSidebar() {
     nav.insertAdjacentHTML('beforeend', logoutHtml);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!Auth.requireAuth()) return;
 
     const user = Auth.getUser();
@@ -321,8 +380,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     document.getElementById('currentDate').textContent = now.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+    // Refresca permisos desde el servidor (puede haber cambiado desde la ultima sesion)
+    await Auth.refresh();
     renderSidebar();
-    App.loadModule('asesoria');
+
+    // Si el modulo activo ya no esta permitido, volver al primer modulo visible
+    const primerVisible = SIDEBAR_SECTIONS.asesoria.find(m => Auth.canSee(m))
+        || SIDEBAR_SECTIONS.lobby.find(m => Auth.canSee(m))
+        || SIDEBAR_SECTIONS.config.find(m => Auth.canSee(m));
+
+    const permitido = App.currentPage && Auth.canSee(App.currentPage);
+    if (permitido) {
+        App.loadModule(App.currentPage);
+    } else {
+        App.currentPage = null;
+        if (primerVisible) {
+            App.loadModule(primerVisible);
+        } else {
+            document.getElementById('mainContent').innerHTML =
+                '<div class="alert alert-warning" style="margin:40px auto;max-width:500px">Tu usuario no tiene acceso a ningun modulo. Contacta al administrador.</div>';
+        }
+    }
 
     if (localStorage.getItem('sidebar_collapsed') === 'true') {
         document.getElementById('sidebar').classList.add('collapsed');

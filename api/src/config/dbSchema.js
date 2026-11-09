@@ -76,6 +76,49 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // ── LOBBY: agendamiento de la sala de reuniones de la asesoria ──
+    await query(`CREATE TABLE IF NOT EXISTS lobby_reservas (
+        id SERIAL PRIMARY KEY,
+        fecha DATE NOT NULL,
+        hora_inicio TIME NOT NULL,
+        hora_fin TIME NOT NULL,
+        motivo VARCHAR(200) NOT NULL,
+        detalle TEXT DEFAULT '',
+        organizador_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+        organizador_nombre VARCHAR(100) DEFAULT '',
+        organizador_email VARCHAR(255) DEFAULT '',
+        estado VARCHAR(20) DEFAULT 'confirmada',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CHECK (hora_fin > hora_inicio)
+    )`);
+
+    await query(`CREATE TABLE IF NOT EXISTS lobby_designados (
+        usuario_id INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // ── PERMISOS GRANULARES por usuario: modulo x accion (ver/editar/eliminar) ──
+    // El rol 'admin' tiene todos los permisos implicitos (no se filtra por esta tabla).
+    await query(`CREATE TABLE IF NOT EXISTS usuario_permisos (
+        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        modulo VARCHAR(50) NOT NULL,
+        accion VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (usuario_id, modulo, accion),
+        CHECK (accion IN ('ver', 'editar', 'eliminar'))
+    )`);
+
+    // ── CONFIGURACION DEL SISTEMA: paleta de colores, logo, etc. (clave-valor) ──
+    await query(`CREATE TABLE IF NOT EXISTS config_sistema (
+        clave VARCHAR(100) PRIMARY KEY,
+        valor TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    await query(`CREATE INDEX IF NOT EXISTS idx_lobby_reservas_fecha ON lobby_reservas(fecha)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_lobby_reservas_estado ON lobby_reservas(estado)`);
+
     await query(`CREATE INDEX IF NOT EXISTS idx_asesorias_plazo ON asesorias(plazo_final)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_asesorias_estado ON asesorias(estado_actual)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_asesorias_fecha ON asesorias(fecha_llegada)`);

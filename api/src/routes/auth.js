@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET, JWT_EXPIRES } = require('../config/auth');
 const { query } = require('../config/database');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requirePermiso, getPermisosUsuario } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -39,9 +39,12 @@ router.post('/api/auth/login', async (req, res) => {
             { expiresIn: JWT_EXPIRES }
         );
 
+        // Permisos granulares (modulo x accion). Admin => null (todo implicito).
+        const permisos = await getPermisosUsuario(user.id, user.rol);
+
         res.json({
             token,
-            user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }
+            user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, permisos }
         });
     } catch (e) {
         console.error('[AUTH] Error login:', e.message);
@@ -62,13 +65,15 @@ router.get('/api/auth/me', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(401).json({ error: 'Usuario no encontrado' });
         }
-        res.json({ user: result.rows[0] });
+        const user = result.rows[0];
+        const permisos = await getPermisosUsuario(user.id, user.rol);
+        res.json({ user: { ...user, permisos } });
     } catch (e) {
         return res.status(401).json({ error: 'Token invalido' });
     }
 });
 
-router.get('/api/auth/users', authenticate, requireAdmin, async (req, res) => {
+router.get('/api/auth/users', authenticate, requirePermiso('usuarios', 'ver'), async (req, res) => {
     try {
         const result = await query('SELECT id, nombre, email, rol, activo FROM usuarios ORDER BY id');
         res.json(result.rows);
@@ -78,7 +83,7 @@ router.get('/api/auth/users', authenticate, requireAdmin, async (req, res) => {
     }
 });
 
-router.put('/api/auth/password', authenticate, requireAdmin, async (req, res) => {
+router.put('/api/auth/password', authenticate, requirePermiso('usuarios', 'editar'), async (req, res) => {
     const { user_id, new_password } = req.body;
 
     if (!user_id || !new_password) {

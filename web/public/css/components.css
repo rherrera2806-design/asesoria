@@ -21,7 +21,7 @@
     transition: all var(--transition-fast); white-space: nowrap;
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: linear-gradient(135deg, var(--info), #2563eb); color: white; box-shadow: 0 2px 8px rgba(59,130,246,0.3); }
+.btn-primary { background: linear-gradient(135deg, var(--info), var(--info-dark)); color: white; box-shadow: 0 2px 8px rgba(59,130,246,0.3); }
 .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
 .btn-success { background: linear-gradient(135deg, var(--success), #16a34a); color: white; }
 .btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }

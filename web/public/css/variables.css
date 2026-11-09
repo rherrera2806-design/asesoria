@@ -9,9 +9,21 @@
     --accent: #f59e0b;
     --accent-dark: #d97706;
     --info: #3b82f6;
+    --info-dark: #2563eb;
     --success: #22c55e;
     --warning: #f59e0b;
     --danger: #ef4444;
+
+    /* Degradados configurables (los sobreescribe el configurador de tema) */
+    --sidebar-from: #0f172a;
+    --sidebar-mid: #121d33;
+    --sidebar-to: #1a2744;
+    --hero-from: #0f172a;
+    --hero-mid: #1e3a5f;
+    --hero-to: #1e40af;
+    --login-from: #0f172a;
+    --login-mid: #1e293b;
+    --login-to: #334155;
 
     --bg: #f8fafc;
     --surface: #ffffff;

@@ -60,6 +60,9 @@ app.use('/api/auth/login', loginLimiter);
 
 app.use(require('./routes/auth'));
 app.use(require('./routes/asesoria'));
+app.use(require('./routes/lobby'));
+app.use(require('./routes/permisos'));
+app.use(require('./routes/config'));
 
 app.get('/api/health', async (req, res) => {
     try {

@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const asesoria = require('../services/asesoria');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requirePermiso } = require('../middleware/auth');
 
-// Lectura: requiere sesion (antes eran publicos y exponian todos los procesos)
-router.get('/api/asesorias', authenticate, async (req, res, next) => {
+// Lectura: requiere sesion y permiso 'ver' del modulo asesoria
+router.get('/api/asesorias', authenticate, requirePermiso('asesoria', 'ver'), async (req, res, next) => {
     try {
         const { filtro, estado, plazo, fecha_desde, fecha_hasta, page, page_size } = req.query;
         res.json(await asesoria.getAsesorias({
@@ -15,27 +15,27 @@ router.get('/api/asesorias', authenticate, async (req, res, next) => {
     } catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/stats', authenticate, async (req, res, next) => {
+router.get('/api/asesorias/stats', authenticate, requirePermiso('asesoria', 'ver'), async (req, res, next) => {
     try { res.json(await asesoria.getStats()); }
     catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/informes', authenticate, async (req, res, next) => {
+router.get('/api/asesorias/informes', authenticate, requirePermiso('informes', 'ver'), async (req, res, next) => {
     try { res.json(await asesoria.getInformesMensual()); }
     catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/calendario/:fecha', authenticate, async (req, res, next) => {
+router.get('/api/asesorias/calendario/:fecha', authenticate, requirePermiso('asesoria-calendar', 'ver'), async (req, res, next) => {
     try { res.json(await asesoria.getPorFecha(req.params.fecha)); }
     catch (e) { next(e); }
 });
 
-router.get('/api/estados', authenticate, async (req, res, next) => {
+router.get('/api/estados', authenticate, requirePermiso('asesoria', 'ver'), async (req, res, next) => {
     try { res.json(await asesoria.getEstados()); }
     catch (e) { next(e); }
 });
 
-router.post('/api/estados', authenticate, requireAdmin, async (req, res, next) => {
+router.post('/api/estados', authenticate, requirePermiso('asesoria', 'editar'), async (req, res, next) => {
     const { nombre, cierra_proceso } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
     try {
@@ -48,14 +48,14 @@ router.post('/api/estados', authenticate, requireAdmin, async (req, res, next) =
     }
 });
 
-router.delete('/api/estados/:id', authenticate, requireAdmin, async (req, res, next) => {
+router.delete('/api/estados/:id', authenticate, requirePermiso('asesoria', 'eliminar'), async (req, res, next) => {
     try {
         await asesoria.eliminarEstado(Number(req.params.id));
         res.json({ ok: true });
     } catch (e) { next(e); }
 });
 
-router.put('/api/estados/:id', authenticate, requireAdmin, async (req, res, next) => {
+router.put('/api/estados/:id', authenticate, requirePermiso('asesoria', 'editar'), async (req, res, next) => {
     const { nombre, cierra_proceso } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
     try {
@@ -68,7 +68,7 @@ router.put('/api/estados/:id', authenticate, requireAdmin, async (req, res, next
     }
 });
 
-router.put('/api/estados/:id/orden', authenticate, requireAdmin, async (req, res, next) => {
+router.put('/api/estados/:id/orden', authenticate, requirePermiso('asesoria', 'editar'), async (req, res, next) => {
     const { orden } = req.body;
     if (orden === undefined) return res.status(400).json({ error: 'Orden requerida' });
     try {
@@ -77,7 +77,7 @@ router.put('/api/estados/:id/orden', authenticate, requireAdmin, async (req, res
     } catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/:id', authenticate, async (req, res, next) => {
+router.get('/api/asesorias/:id', authenticate, requirePermiso('asesoria', 'ver'), async (req, res, next) => {
     try {
         const a = await asesoria.getAsesoriaById(Number(req.params.id));
         if (!a) return res.status(404).json({ error: 'No encontrada' });
@@ -85,12 +85,12 @@ router.get('/api/asesorias/:id', authenticate, async (req, res, next) => {
     } catch (e) { next(e); }
 });
 
-router.get('/api/asesorias/:id/historial', authenticate, async (req, res, next) => {
+router.get('/api/asesorias/:id/historial', authenticate, requirePermiso('asesoria', 'ver'), async (req, res, next) => {
     try { res.json(await asesoria.getHistorial(Number(req.params.id))); }
     catch (e) { next(e); }
 });
 
-router.post('/api/asesorias', authenticate, requireAdmin, async (req, res, next) => {
+router.post('/api/asesorias', authenticate, requirePermiso('asesoria', 'editar'), async (req, res, next) => {
     const { codigo_identificacion, remitente, detalle_solicitud } = req.body;
     if (!codigo_identificacion || !remitente || !detalle_solicitud) {
         return res.status(400).json({ error: 'Codigo, remitente y detalle son requeridos' });
@@ -108,7 +108,7 @@ router.post('/api/asesorias', authenticate, requireAdmin, async (req, res, next)
     }
 });
 
-router.put('/api/asesorias/:id', authenticate, requireAdmin, async (req, res, next) => {
+router.put('/api/asesorias/:id', authenticate, requirePermiso('asesoria', 'editar'), async (req, res, next) => {
     try {
         const email = req.user.email;
         res.json(await asesoria.actualizarAsesoria(Number(req.params.id), req.body, email));
@@ -122,7 +122,7 @@ router.put('/api/asesorias/:id', authenticate, requireAdmin, async (req, res, ne
     }
 });
 
-router.put('/api/asesorias/:id/estado', authenticate, requireAdmin, async (req, res, next) => {
+router.put('/api/asesorias/:id/estado', authenticate, requirePermiso('asesoria', 'editar'), async (req, res, next) => {
     const { estado, observacion } = req.body;
     if (!estado) return res.status(400).json({ error: 'Estado requerido' });
     try {
@@ -135,7 +135,7 @@ router.put('/api/asesorias/:id/estado', authenticate, requireAdmin, async (req, 
     }
 });
 
-router.delete('/api/asesorias/:id', authenticate, requireAdmin, async (req, res, next) => {
+router.delete('/api/asesorias/:id', authenticate, requirePermiso('asesoria', 'eliminar'), async (req, res, next) => {
     try {
         await asesoria.eliminarAsesoria(Number(req.params.id));
         res.json({ ok: true });
